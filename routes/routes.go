@@ -11,7 +11,5 @@ func SetupRoutes() *chi.Mux {
 
 	r.Get("/", handler.HandleIndexRoute)
 
-	// Add more routes as needed
-
 	return r
 }
