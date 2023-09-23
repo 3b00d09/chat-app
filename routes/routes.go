@@ -10,7 +10,7 @@ func SetupRoutes() *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/", handler.HandleIndexRoute)
-	r.Post("/login", handler.HandleLoginRoute)
+	r.Get("/login", handler.HandleLoginRoute)
 	r.Get("/register", handler.HandleRegisterRoute)
 
 	return r
