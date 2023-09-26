@@ -1,8 +1,9 @@
 package main
 
 import (
+	"chat-app/database"
 	"chat-app/routes"
-	"chat-app/server"
+
 	"context"
 	"fmt"
 	"net/http"
@@ -18,11 +19,13 @@ func main() {
 	r := routes.SetupRoutes()
 	ctx := context.Background()
 
-	db, err := server.SetupDB()
+	db, err := database.SetupDB()
 	if err != nil {
 		fmt.Print(err)
 	}
-	data, err := db.QueryContext(ctx, "select * from users")
+	database.RunSchema(db)
+
+	data, err := db.QueryContext(ctx, "select * from user")
 	if err != nil {
 		fmt.Print(err)
 	}
