@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"chat-app/server"
+	"fmt"
 	"html/template"
 	"net/http"
 )
@@ -40,5 +42,22 @@ func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
 		return
+	}
+}
+
+func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
+	fmt.Print(r.Form)
+}
+
+func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	username := r.FormValue("username")
+	exists := server.UserExists(username)
+	fmt.Print(exists)
+	if r.FormValue("password1") != r.FormValue("password2") {
+		fmt.Print("no match")
+	} else {
+		fmt.Print("nice")
 	}
 }

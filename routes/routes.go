@@ -11,7 +11,9 @@ func SetupRoutes() *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/", handler.HandleIndexRoute)
 	r.With(server.MiddlewareTest).Get("/login", handler.HandleLoginRoute)
+	r.Post("/login", handler.HandleLoginSubmission)
 	r.Get("/register", handler.HandleRegisterRoute)
+	r.Post("/register", handler.HandleRegisterSubmission)
 
 	return r
 }
