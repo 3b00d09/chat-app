@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"chat-app/database"
 	"chat-app/server"
 	"fmt"
 	"html/template"
@@ -54,10 +55,18 @@ func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 
 	username := r.FormValue("username")
 	exists := server.UserExists(username)
-	fmt.Print(exists)
-	if r.FormValue("password1") != r.FormValue("password2") {
-		fmt.Print("no match")
+	if !exists {
+		if r.FormValue("password1") == r.FormValue("password2") {
+			user := database.User{
+				Username: username,
+				Password: r.FormValue("password1"),
+			}
+			server.CreateUser(user)
+		} else {
+			fmt.Print("Passwords Dont Match")
+		}
 	} else {
-		fmt.Print("nice")
+		fmt.Print("User Exists")
 	}
+
 }
