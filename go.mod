@@ -10,6 +10,13 @@ require (
 )
 
 require (
+	github.com/howeyc/fsnotify v0.9.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/pilu/config v0.0.0-20131214182432-3eb99e6c0b9a // indirect
+	github.com/pilu/fresh v0.0.0-20190826141211-0fa698148017 // indirect
+)
+
+require (
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230512164433-5d1fd1a340c9 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.3.1

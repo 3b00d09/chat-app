@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"chat-app/auth"
 	"chat-app/database"
-	"chat-app/server"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -47,21 +47,24 @@ func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
-	fmt.Print(r.Form)
+	fmt.Println("we are in login")
+	r.ParseForm()
+	data := r.Form.Get("email")
+	fmt.Print(data)
 }
 
 func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
 	username := r.FormValue("username")
-	exists := server.UserExists(username)
+	exists := auth.UserExists(username)
 	if !exists {
 		if r.FormValue("password1") == r.FormValue("password2") {
 			user := database.User{
 				Username: username,
 				Password: r.FormValue("password1"),
 			}
-			server.CreateUser(user)
+			auth.CreateUser(user)
 		} else {
 			fmt.Print("Passwords Dont Match")
 		}
