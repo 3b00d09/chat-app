@@ -8,11 +8,46 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/xyproto/randomstring"
 )
 
 // TODO
-// check if user exists
 // creating sessions
+
+func CreateSession(userId string) {
+
+	fmt.Println(userId)
+
+	sessionId := randomstring.CookieFriendlyString(14)
+
+	newSession := database.UserSession{
+		ID:            sessionId,
+		UserID:        userId,
+		ActiveExpires: 343,
+		IdleExpires:   3433,
+	}
+
+	db, err := database.SetupDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	statement, err := db.Prepare("INSERT INTO user_session (id, user_id, active_expires, idle_expires) VALUES (?, ?, ?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer statement.Close()
+
+	_, err = statement.Exec(newSession.ID, newSession.UserID, newSession.ActiveExpires, newSession.IdleExpires)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Successfully added %s", newSession.ID)
+}
+
 func UserExists(username string) bool {
 	db, err := database.SetupDB()
 	if err != nil {
@@ -47,6 +82,8 @@ func CreateUser(user database.User) {
 	}
 	defer db.Close()
 
+	hashedPassword := GeneratHashedPassword(user.Password)
+
 	statement, err := db.Prepare("INSERT INTO user (id, username, password) VALUES (?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
@@ -58,9 +95,11 @@ func CreateUser(user database.User) {
 		log.Fatal(err)
 	}
 
-	_, err = statement.Exec(uid.String(), user.Username, user.Password)
+	_, err = statement.Exec(uid.String(), user.Username, hashedPassword)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Successfully added %s", user.Username)
+
+	CreateSession(uid.String())
 }
