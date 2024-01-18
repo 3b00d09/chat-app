@@ -22,7 +22,7 @@ func CreateSession(userId string) {
 
 	newSession := database.UserSession{
 		ID:            sessionId,
-		UserID:        userId,
+		UserID:        "23153",
 		ActiveExpires: 343,
 		IdleExpires:   3433,
 	}
@@ -40,6 +40,8 @@ func CreateSession(userId string) {
 
 	defer statement.Close()
 
+	fmt.Println(newSession)
+
 	_, err = statement.Exec(newSession.ID, newSession.UserID, newSession.ActiveExpires, newSession.IdleExpires)
 	if err != nil {
 		log.Fatal(err)
@@ -54,22 +56,24 @@ func UserExists(username string) bool {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	statement, err := db.Prepare("SELECT 1 FROM user WHERE username = ?")
+	statement, err := db.Prepare("SELECT username FROM user WHERE username = ?")
 
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer statement.Close()
 
-	var exists int
-	err = statement.QueryRow(username).Scan(&exists)
+	var name string
+	err = statement.QueryRow(username).Scan(&name)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
+			fmt.Println("No rows")
 			return false
 		}
 		log.Fatal(err)
 	}
+
 	return true
 
 }

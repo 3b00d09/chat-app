@@ -49,8 +49,12 @@ func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
 func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("we are in login")
 	r.ParseForm()
-	data := r.Form.Get("email")
-	fmt.Print(data)
+	username := r.FormValue("email")
+	user := database.User{
+		Username: username,
+		Password: r.FormValue("password"),
+	}
+	auth.UserExists(user.Username)
 }
 
 func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
