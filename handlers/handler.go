@@ -5,6 +5,7 @@ import (
 	"chat-app/database"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 )
 
@@ -47,14 +48,35 @@ func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("we are in login")
 	r.ParseForm()
 	username := r.FormValue("email")
 	user := database.User{
 		Username: username,
 		Password: r.FormValue("password"),
 	}
-	auth.UserExists(user.Username)
+	if auth.UserExists(user.Username) {
+		browserCookie, err := r.Cookie("session_token")
+
+		if err != nil {
+			if err == http.ErrNoCookie {
+				sessionCookie := auth.CreateSession(username)
+				fmt.Println(sessionCookie)
+				http.SetCookie(w, &sessionCookie)
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			} else {
+				log.Fatal("something went wrong")
+			}
+		}
+		isValidSession := auth.AuthenticateSession(browserCookie.Value)
+
+		if !isValidSession {
+			fmt.Println("Session not valid")
+		}
+
+		// sessionCookie := auth.CreateSession(username)
+		// http.SetCookie(w, &sessionCookie)
+	}
 }
 
 func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {

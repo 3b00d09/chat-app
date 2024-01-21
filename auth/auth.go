@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
@@ -14,7 +16,7 @@ import (
 // TODO
 // creating sessions
 
-func CreateSession(userId string) {
+func CreateSession(userId string) http.Cookie {
 
 	fmt.Println(userId)
 
@@ -23,8 +25,8 @@ func CreateSession(userId string) {
 	newSession := database.UserSession{
 		ID:            sessionId,
 		UserID:        "23153",
-		ActiveExpires: 343,
-		IdleExpires:   3433,
+		ActiveExpires: time.Now().Add(1 * time.Minute).Unix(),
+		IdleExpires:   0,
 	}
 
 	db, err := database.SetupDB()
@@ -47,9 +49,47 @@ func CreateSession(userId string) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Successfully added %s", newSession.ID)
+	cookie := http.Cookie{
+		Name:     "session_token",
+		Value:    sessionId,
+		Path:     "/",
+		MaxAge:   3600,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	return cookie
+
 }
 
+func AuthenticateSession(cookie string) bool {
+	db, err := database.SetupDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer db.Close()
+
+	statement, err := db.Prepare("SELECT * FROM user_session WHERE id = ?")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	row := statement.QueryRow(cookie)
+
+	var sessionID, userID string
+	var activeExpires, idleExpires int64
+
+	err = row.Scan(&sessionID, &userID, &activeExpires, &idleExpires)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return activeExpires < time.Now().Unix()
+
+}
 func UserExists(username string) bool {
 	db, err := database.SetupDB()
 	if err != nil {
@@ -61,7 +101,6 @@ func UserExists(username string) bool {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer statement.Close()
 
 	var name string
 	err = statement.QueryRow(username).Scan(&name)
