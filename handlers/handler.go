@@ -14,13 +14,29 @@ type User struct {
 	Username string
 }
 
+type PageData struct {
+	User User
+}
+
 func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
+
 	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html"))
+	_, err := r.Cookie("session_token")
+	
+	var tokenExists bool = true
+	if err != nil{
+		tokenExists = false
+	}
+
 	user := User{
-		LoggedIn: true,
+		LoggedIn: tokenExists,
 		Username: "annon",
 	}
-	err := templates.ExecuteTemplate(w, "layout.html", user)
+
+	data := PageData{
+		User: user,
+	}
+	err = templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
 		return
@@ -47,6 +63,29 @@ func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func HandleLogoutRoute(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session_token")
+
+	if err != nil{
+		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+	}
+
+
+	auth.ClearSession(cookie.Value)
+	newCookie := http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(w, &newCookie)
+	http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+	
+}
+
 func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := r.FormValue("email")
@@ -55,27 +94,13 @@ func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
 		Password: r.FormValue("password"),
 	}
 	if auth.UserExists(user.Username) {
-		browserCookie, err := r.Cookie("session_token")
 
-		if err != nil {
-			if err == http.ErrNoCookie {
-				sessionCookie := auth.CreateSession(username)
-				fmt.Println(sessionCookie)
-				http.SetCookie(w, &sessionCookie)
-				http.Redirect(w, r, "/", http.StatusSeeOther)
-				return
-			} else {
-				log.Fatal("something went wrong")
-			}
-		}
-		isValidSession := auth.AuthenticateSession(browserCookie.Value)
+		sessionCookie := auth.CreateSession(username)
+		http.SetCookie(w, &sessionCookie)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 
-		if !isValidSession {
-			fmt.Println("Session not valid")
-		}
-
-		// sessionCookie := auth.CreateSession(username)
-		// http.SetCookie(w, &sessionCookie)
+	}else{
+		log.Fatal("invalid credentials")
 	}
 }
 
@@ -90,7 +115,8 @@ func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 				Username: username,
 				Password: r.FormValue("password1"),
 			}
-			auth.CreateUser(user)
+			var cookie http.Cookie = auth.CreateUser(user)
+			http.SetCookie(w, &cookie)
 		} else {
 			fmt.Print("Passwords Dont Match")
 		}

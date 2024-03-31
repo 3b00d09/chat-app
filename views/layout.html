@@ -8,10 +8,14 @@
 </head>
 <body class="text-white bg-red-900">
     <header class="flex justify-between items-center bg-zinc-800 flex-wrap p-4">
-        <ul>
-            <a href="login"><li>Login</li></a>
-            <a href="register"><li>Register</li></a>
-        </ul>
+        {{if .User.LoggedIn}}
+            <a href="logout">Log Out</a>
+        {{ else }}
+            <ul>
+                <a href="login"><li>Login</li></a>
+                <a href="register"><li>Register</li></a>
+            </ul>
+        {{end}}
     </header>
 
     <main class="grid place-items-center h-screen">

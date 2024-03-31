@@ -13,29 +13,114 @@ import (
 	"github.com/xyproto/randomstring"
 )
 
-// TODO
-// creating sessions
 
-func CreateSession(userId string) http.Cookie {
 
-	fmt.Println(userId)
+func AuthenticateSession(cookie string) bool {
+
+	statement, err := database.DB.Prepare("SELECT * FROM user_session WHERE id = ?")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer statement.Close()
+
+	row := statement.QueryRow(cookie)
+
+	var sessionID, userID string
+	var activeExpires, idleExpires int64
+
+	err = row.Scan(&sessionID, &userID, &activeExpires, &idleExpires)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return activeExpires < time.Now().Unix()
+
+}
+
+func UserExists(username string) bool {
+
+	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username = ?")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer statement.Close()
+
+
+	var name string
+	err = statement.QueryRow(username).Scan(&name)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("User doesnt exist")
+			return false
+		}
+		log.Fatal(err)
+	}
+
+	return true
+
+}
+
+func CreateUser(user database.User) http.Cookie {
+
+	hashedPassword := GeneratHashedPassword(user.Password)
+
+	statement, err := database.DB.Prepare("INSERT INTO user (id, username, password) VALUES (?, ?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer statement.Close()
+	uid, err := uuid.NewRandom()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rowId := uid.String()
+	_, err = statement.Exec(rowId, user.Username, hashedPassword)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Successfully added %s", user.Username)
+
+	var cookie http.Cookie = CreateSession(user.Username)
+
+	return cookie
+}
+
+func CreateSession(username string) http.Cookie {
+
+	query, err := database.DB.Prepare("SELECT id FROM user WHERE username = ?")
+
+	if err != nil{
+		log.Fatal(err)
+	}
+
+	var userId string
+
+	err = query.QueryRow(username).Scan(&userId)
+
+    if err != nil {
+        if err == sql.ErrNoRows {
+            fmt.Println("User not found")
+        } else {
+            log.Fatal(err)
+        }
+    }
 
 	sessionId := randomstring.CookieFriendlyString(14)
 
 	newSession := database.UserSession{
 		ID:            sessionId,
-		UserID:        "23153",
+		UserID:        userId,
 		ActiveExpires: time.Now().Add(1 * time.Minute).Unix(),
 		IdleExpires:   0,
 	}
-
-	db, err := database.SetupDB()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	statement, err := db.Prepare("INSERT INTO user_session (id, user_id, active_expires, idle_expires) VALUES (?, ?, ?, ?)")
+	
+	statement, err := database.DB.Prepare("INSERT INTO user_session (id, user_id, active_expires, idle_expires) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,86 +148,15 @@ func CreateSession(userId string) http.Cookie {
 
 }
 
-func AuthenticateSession(cookie string) bool {
-	db, err := database.SetupDB()
-	if err != nil {
-		log.Fatal(err)
+func ClearSession(token string){
+	statement, err := database.DB.Prepare("DELETE FROM user_session WHERE id = ?")
+	
+	if err != nil{
+		log.Fatal("Error deleting session")
 	}
-
-	defer db.Close()
-
-	statement, err := db.Prepare("SELECT * FROM user_session WHERE id = ?")
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	row := statement.QueryRow(cookie)
-
-	var sessionID, userID string
-	var activeExpires, idleExpires int64
-
-	err = row.Scan(&sessionID, &userID, &activeExpires, &idleExpires)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return activeExpires < time.Now().Unix()
-
-}
-func UserExists(username string) bool {
-	db, err := database.SetupDB()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	statement, err := db.Prepare("SELECT username FROM user WHERE username = ?")
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var name string
-	err = statement.QueryRow(username).Scan(&name)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			fmt.Println("No rows")
-			return false
-		}
-		log.Fatal(err)
-	}
-
-	return true
-
-}
-
-func CreateUser(user database.User) {
-
-	db, err := database.SetupDB()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	hashedPassword := GeneratHashedPassword(user.Password)
-
-	statement, err := db.Prepare("INSERT INTO user (id, username, password) VALUES (?, ?, ?)")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	defer statement.Close()
-	uid, err := uuid.NewRandom()
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	_, err = statement.Exec(uid.String(), user.Username, hashedPassword)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Successfully added %s", user.Username)
+	statement.Exec(token)
 
-	CreateSession(uid.String())
+
 }
