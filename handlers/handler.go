@@ -16,7 +16,10 @@ type User struct {
 
 type PageData struct {
 	User User
+	Count int
 }
+
+var count int = 0
 
 func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 
@@ -35,12 +38,21 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 
 	data := PageData{
 		User: user,
+		Count: count,
 	}
+
+
 	err = templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func HandleIncrement(w http.ResponseWriter, r *http.Request) {
+	count ++
+	html := "<h1 id='count' >" + fmt.Sprint(count) + "</h1>"
+	w.Write([]byte(html))
 }
 
 func HandleRegisterRoute(w http.ResponseWriter, r *http.Request) {
@@ -66,8 +78,9 @@ func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
 func HandleLogoutRoute(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_token")
 
-	if err != nil{
-		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+	if err != nil || cookie == nil{
+		http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		return
 	}
 
 
@@ -94,7 +107,6 @@ func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
 		Password: r.FormValue("password"),
 	}
 	if auth.UserExists(user.Username) {
-
 		sessionCookie := auth.CreateSession(username)
 		http.SetCookie(w, &sessionCookie)
 		http.Redirect(w, r, "/", http.StatusSeeOther)

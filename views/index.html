@@ -4,6 +4,7 @@
 
 {{define "content"}}
 
-<h1>Home Page</h1>
-{{.User.Username}}
+<button hx-post="/increment" hx-target="#count" hx-swap="outerHTML">Click</button>
+<div id="count"></div>
+
 {{end}}

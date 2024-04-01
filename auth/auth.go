@@ -127,8 +127,6 @@ func CreateSession(username string) http.Cookie {
 
 	defer statement.Close()
 
-	fmt.Println(newSession)
-
 	_, err = statement.Exec(newSession.ID, newSession.UserID, newSession.ActiveExpires, newSession.IdleExpires)
 	if err != nil {
 		log.Fatal(err)
