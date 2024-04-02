@@ -4,7 +4,17 @@
 
 {{define "content"}}
 
-<button hx-post="/increment" hx-target="#count" hx-swap="outerHTML">Click</button>
-<div id="count"></div>
+<div class="w-full h-full p-24 grid place-items-center">
+    <div class="bg-primary w-full h-full border-2 border-black rounded-lg p-2">
+        <div class="flex w-full h-full">
+            <div class="border-r w-[300px] flex flex-col min-h-0">
+                <h2 class="font-semibold ml-2 text-lg p-2">{{.User.Username}}</h2>
+            </div>
+            <div class="flex-1 flex flex-col">
+                <p>Hello</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 {{end}}

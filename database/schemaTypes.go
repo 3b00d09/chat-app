@@ -3,6 +3,10 @@ package database
 type User struct {
 	ID       string `db:"id"`
 	Username string `db:"username"`
+}
+
+type UserCredentials struct {
+	Username string `db:"username"`
 	Password string `db:"password"`
 }
 

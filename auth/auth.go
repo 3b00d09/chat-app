@@ -15,7 +15,7 @@ import (
 
 
 
-func AuthenticateSession(cookie string) bool {
+func AuthenticateSession(cookie string) database.User {
 
 	statement, err := database.DB.Prepare("SELECT * FROM user_session WHERE id = ?")
 
@@ -31,10 +31,29 @@ func AuthenticateSession(cookie string) bool {
 
 	err = row.Scan(&sessionID, &userID, &activeExpires, &idleExpires)
 	if err != nil {
-		log.Fatal(err)
+		return database.User{}
 	}
 
-	return activeExpires < time.Now().Unix()
+	 if(activeExpires < time.Now().Unix()){
+		return database.User{}
+	 }
+
+	 statement, err = database.DB.Prepare("SELECT id, username FROM user WHERE id = ?")
+
+	 if err != nil {	
+		 log.Fatal(err)
+	 }
+	 defer statement.Close()
+
+	 row = statement.QueryRow(userID)
+	 User := database.User{}
+	 err = row.Scan(&User.ID, &User.Username)
+
+	 if err != nil {
+		 return database.User{}
+	 }
+
+	 return User	
 
 }
 
@@ -64,7 +83,7 @@ func UserExists(username string) bool {
 
 }
 
-func CreateUser(user database.User) http.Cookie {
+func CreateUser(user database.UserCredentials) http.Cookie {
 
 	hashedPassword := GeneratHashedPassword(user.Password)
 
@@ -116,7 +135,7 @@ func CreateSession(username string) http.Cookie {
 	newSession := database.UserSession{
 		ID:            sessionId,
 		UserID:        userId,
-		ActiveExpires: time.Now().Add(1 * time.Minute).Unix(),
+		ActiveExpires: time.Now().Add(3600 * time.Minute).Unix(),
 		IdleExpires:   0,
 	}
 	
@@ -157,4 +176,17 @@ func ClearSession(token string){
 	statement.Exec(token)
 
 
+}
+
+func AuthenticateRequest(w http.ResponseWriter, r *http.Request) database.User {
+
+	cookie, err := r.Cookie("session_token")
+
+	if err != nil || cookie == nil{
+		return database.User{}
+	}
+
+	user := AuthenticateSession(cookie.Value) 
+
+	return user
 }

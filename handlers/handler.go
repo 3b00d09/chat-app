@@ -9,54 +9,37 @@ import (
 	"net/http"
 )
 
-type User struct {
-	LoggedIn bool
-	Username string
-}
 
 type PageData struct {
-	User User
-	Count int
+	User database.User
 }
 
-var count int = 0
 
 func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 
 	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html"))
-	_, err := r.Cookie("session_token")
-	
-	var tokenExists bool = true
-	if err != nil{
-		tokenExists = false
-	}
-
-	user := User{
-		LoggedIn: tokenExists,
-		Username: "annon",
-	}
+	var User database.User  = auth.AuthenticateRequest(w, r)
 
 	data := PageData{
-		User: user,
-		Count: count,
+		User: User,
 	}
 
-
-	err = templates.ExecuteTemplate(w, "layout.html", data)
+	err := templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func HandleIncrement(w http.ResponseWriter, r *http.Request) {
-	count ++
-	html := "<h1 id='count' >" + fmt.Sprint(count) + "</h1>"
-	w.Write([]byte(html))
-}
-
 func HandleRegisterRoute(w http.ResponseWriter, r *http.Request) {
 	templates := template.Must(template.ParseFiles("views/layout.html", "views/register.html"))
+	var User database.User  = auth.AuthenticateRequest(w, r)
+
+	if(User.ID != ""){
+		http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		return
+	}
+
 	err := templates.ExecuteTemplate(w, "layout.html", nil)
 
 	if err != nil {
@@ -67,8 +50,15 @@ func HandleRegisterRoute(w http.ResponseWriter, r *http.Request) {
 
 func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
 	templates := template.Must(template.ParseFiles("views/layout.html", "views/login.html"))
-	err := templates.ExecuteTemplate(w, "layout.html", nil)
 
+	var User database.User  = auth.AuthenticateRequest(w, r)
+
+	if(User.ID != ""){
+		http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		return
+	}
+
+	err := templates.ExecuteTemplate(w, "layout.html", nil)
 	if err != nil {
 		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
 		return
@@ -85,6 +75,7 @@ func HandleLogoutRoute(w http.ResponseWriter, r *http.Request) {
 
 
 	auth.ClearSession(cookie.Value)
+
 	newCookie := http.Cookie{
 		Name:     "session_token",
 		Value:    "",
@@ -102,7 +93,7 @@ func HandleLogoutRoute(w http.ResponseWriter, r *http.Request) {
 func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := r.FormValue("email")
-	user := database.User{
+	user := database.UserCredentials{
 		Username: username,
 		Password: r.FormValue("password"),
 	}
@@ -123,7 +114,7 @@ func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 	exists := auth.UserExists(username)
 	if !exists {
 		if r.FormValue("password1") == r.FormValue("password2") {
-			user := database.User{
+			user := database.UserCredentials{
 				Username: username,
 				Password: r.FormValue("password1"),
 			}

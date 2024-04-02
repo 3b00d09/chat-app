@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/assets/output.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/htmx.org/dist/htmx.min.js"></script>
     <title>{{template "title" .}}</title>
 </head>
-<body class="text-white bg-red-900">
+
+<body class="text-white bg-background flex flex-col h-screen">
     <header class="grid bg-zinc-800 p-4 w-full grid-cols-2">
-        {{if .User.LoggedIn}}
+        {{if .User.Username}}
             <p class="justify-self-start">Welcome {{ .User.Username }}</p>
             <a class="justify-self-end" href="logout">Log Out</a>
         {{ else }}
@@ -20,8 +22,9 @@
         {{end}}
     </header>
 
-    <main class="grid place-items-center h-screen">
+    <main class="grid place-items-center grow">
         {{template "content" .}}
     </main>
 </body>
+
 </html>
