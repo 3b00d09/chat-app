@@ -9,9 +9,9 @@ import (
 	"net/http"
 )
 
-
 type PageData struct {
 	User database.User
+	Items []interface{}
 }
 
 
@@ -22,6 +22,7 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 
 	data := PageData{
 		User: User,
+		Items: make([]interface{}, 10),
 	}
 
 	err := templates.ExecuteTemplate(w, "layout.html", data)
