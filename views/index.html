@@ -30,6 +30,7 @@
                         <p>pfp</p>
                         <p>Chat with Alice</p>
                     </div>
+                    {{template "chat-box" .Messages}}
                 </div>
 
     </div>
@@ -39,7 +40,20 @@
 
 
 {{define "chat-item"}}
-<li>
-    <a href="/" class="flex items-center gap-2 p-4 w-full text-sm">Item</a>
-</li>
+    <li>
+        <a href="/" class="flex items-center gap-2 p-4 w-full text-sm">Item</a>
+    </li>
+{{end}}
+
+
+
+{{define "chat-box"}}
+    <div>
+        {{range .}}
+            <div class="flex gap-2">
+                <p>{{.Date}}</p>
+            </div>
+            <p>{{.Content}}</p>
+        {{end}}
+    </div>
 {{end}}

@@ -9,13 +9,26 @@ import (
 	"net/http"
 )
 
+type Message struct {
+	Content string
+	Sender  string
+	Date   string
+	Count int
+}
+
 type PageData struct {
 	User database.User
 	Items []interface{}
+	Messages []Message
 }
 
+var messages []Message = []Message{}
+var count = 0;
 
 func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
+
+	count = count + 1
+	messages = append(messages, Message{Content: "Hello", Sender: "John", Date: "12:00", Count: count})
 
 	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html"))
 	var User database.User  = auth.AuthenticateRequest(w, r)
@@ -23,6 +36,7 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 	data := PageData{
 		User: User,
 		Items: make([]interface{}, 10),
+		Messages: messages,
 	}
 
 	err := templates.ExecuteTemplate(w, "layout.html", data)
