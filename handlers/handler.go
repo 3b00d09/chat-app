@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type Message struct {
@@ -142,4 +143,51 @@ func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 		fmt.Print("User Exists")
 	}
 
+}
+
+func HandleSearchRoute(w http.ResponseWriter, r *http.Request) {
+
+	queryParam := r.URL.Query().Get("q")
+	queryParam = strings.Trim(queryParam, " ")
+	if(queryParam == ""){
+		return
+	}
+
+	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username LIKE ?")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer statement.Close()
+
+	rows, err := statement.Query("%" + queryParam + "%")
+	if err != nil {
+        log.Fatal(err)
+    }
+    defer rows.Close()
+
+	var results []string
+    for rows.Next() {
+        var username string
+        err := rows.Scan(&username)
+        if err != nil {
+            log.Fatal(err)
+        }
+        results = append(results, username)
+    }
+
+    if err = rows.Err(); err != nil {
+        log.Fatal(err)
+    }
+	var html string
+
+	if len(results) == 0 {
+		html = "<div>No Results Found</div>"
+	}else{
+		for _, username := range results {
+			html += fmt.Sprintf("<div>%s</div>", username)
+		}
+	}
+
+	w.Write([]byte(html))
 }

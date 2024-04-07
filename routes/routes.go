@@ -28,6 +28,7 @@ func SetupRoutes() *chi.Mux {
 	r.Get("/register", handler.HandleRegisterRoute)
 	r.Post("/register", handler.HandleRegisterSubmission)
 	r.Get("/logout", handler.HandleLogoutRoute)
+	r.Get("/search", handler.HandleSearchRoute)
 
 
 
