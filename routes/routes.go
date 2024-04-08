@@ -2,7 +2,6 @@ package routes
 
 import (
 	handler "chat-app/handlers"
-	server "chat-app/server"
 	"net/http"
 	"path/filepath"
 
@@ -23,7 +22,8 @@ func SetupRoutes() *chi.Mux {
 	})
 
 	r.Get("/", handler.HandleIndexRoute)
-	r.With(server.MiddlewareTest).Get("/login", handler.HandleLoginRoute)
+	r.Get("/{user}", handler.HandleChatRoute)
+	r.Get("/login", handler.HandleLoginRoute)
 	r.Post("/login", handler.HandleLoginSubmission)
 	r.Get("/register", handler.HandleRegisterRoute)
 	r.Post("/register", handler.HandleRegisterSubmission)

@@ -26,11 +26,9 @@
                 </div>
 
                 <div class="flex-1 flex flex-col">
-                    <div class="border-b flex h-[60px] gap-2 items-center px-4">
-                        <p>pfp</p>
-                        <p>Chat with Alice</p>
-                    </div>
-                    <!-- {{template "chat-box" .Messages}} -->
+                    {{if .Chat }}
+                        {{template "chat" .}}
+                    {{end}}
                 </div>
 
     </div>

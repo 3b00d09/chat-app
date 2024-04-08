@@ -1,0 +1,11 @@
+{{define "chat" }}
+
+<div class="border-b flex h-[60px] gap-2 items-center px-4">
+    {{if eq (len .TargetUser) 0}}
+        No user found
+    {{else}}
+        Chatting with {{.TargetUser}}
+    {{end}}
+</div>
+
+{{end}}

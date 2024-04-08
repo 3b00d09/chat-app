@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/xyproto/randomstring"
 )
 
@@ -138,6 +137,7 @@ func CreateSession(username string) http.Cookie {
 		ActiveExpires: time.Now().Add(3600 * time.Minute).Unix(),
 		IdleExpires:   0,
 	}
+	ClearSession(userId)
 	
 	statement, err := database.DB.Prepare("INSERT INTO user_session (id, user_id, active_expires, idle_expires) VALUES (?, ?, ?, ?)")
 	if err != nil {
@@ -151,15 +151,16 @@ func CreateSession(username string) http.Cookie {
 		log.Fatal(err)
 	}
 
-	cookie := http.Cookie{
-		Name:     "session_token",
-		Value:    sessionId,
-		Path:     "/",
-		MaxAge:   3600,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	}
+
+cookie := http.Cookie{
+	Name:     "session_token",
+	Value:    sessionId,
+	Path:     "/",
+	MaxAge:   3600,
+	HttpOnly: true,
+	Secure:   true,
+	SameSite: http.SameSiteLaxMode,
+}
 
 	return cookie
 
@@ -189,4 +190,18 @@ func AuthenticateRequest(w http.ResponseWriter, r *http.Request) database.User {
 	user := AuthenticateSession(cookie.Value) 
 
 	return user
+}
+
+func ClearUserSessions(userId string){
+	statement, err := database.DB.Prepare("DELETE FROM user_session WHERE user_id = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec(userId)
+
+	if err != nil {
+		fmt.Print(err)
+	}
 }

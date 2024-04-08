@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type Message struct {
@@ -21,6 +23,8 @@ type PageData struct {
 	User database.User
 	Items []interface{}
 	Messages []Message
+	Chat bool
+	TargetUser string
 }
 
 var messages []Message = []Message{}
@@ -31,13 +35,15 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 	count = count + 1
 	messages = append(messages, Message{Content: "Hello", Sender: "John", Date: "12:00", Count: count})
 
-	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html"))
+	// still have to pass in chat.html because it will error out even if i have an if statement wrapping it in the template
+	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html"))
 	var User database.User  = auth.AuthenticateRequest(w, r)
 
 	data := PageData{
 		User: User,
 		Items: make([]interface{}, 10),
 		Messages: messages,
+		Chat: false,
 	}
 
 	err := templates.ExecuteTemplate(w, "layout.html", data)
@@ -70,6 +76,7 @@ func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
 	var User database.User  = auth.AuthenticateRequest(w, r)
 
 	if(User.ID != ""){
+		fmt.Print("User is already logged in")
 		http.Redirect(w, r, "/", http.StatusMovedPermanently)
 		return
 	}
@@ -190,4 +197,45 @@ func HandleSearchRoute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(html))
+}
+
+func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
+	targetUser := chi.URLParam(r, "user")
+
+	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html"))
+	var User database.User  = auth.AuthenticateRequest(w, r)
+
+	if(User.ID == ""){
+		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+		return
+	}
+	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username == ?")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer statement.Close()
+
+	rows := statement.QueryRow(targetUser)
+	err = rows.Scan(&targetUser)
+
+	if err != nil {
+		targetUser = ""
+	}
+
+	data := PageData{
+		User: User,
+		Items: make([]interface{}, 10),
+		Messages: messages,
+		Chat: true,
+		TargetUser: targetUser,
+	}
+
+	err = templates.ExecuteTemplate(w, "layout.html", data)
+	
+	if err != nil {
+		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 }
