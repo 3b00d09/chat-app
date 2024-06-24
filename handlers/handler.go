@@ -143,6 +143,7 @@ func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 			}
 			var cookie http.Cookie = auth.CreateUser(user)
 			http.SetCookie(w, &cookie)
+			http.Redirect(w, r, "/", http.StatusMovedPermanently)
 		} else {
 			fmt.Print("Passwords Dont Match")
 		}

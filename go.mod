@@ -6,14 +6,13 @@ require (
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/libsql/libsql-client-go v0.0.0-20230906132309-42289d60a030
 	github.com/mattn/go-sqlite3 v1.14.17
-	github.com/xyproto/randomstring v1.0.5
 	modernc.org/sqlite v1.25.0
 )
 
 require (
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230512164433-5d1fd1a340c9 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect

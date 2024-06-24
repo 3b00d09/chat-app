@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/xyproto/randomstring"
 )
 
 
@@ -129,15 +128,14 @@ func CreateSession(username string) http.Cookie {
         }
     }
 
-	sessionId := randomstring.CookieFriendlyString(14)
+	sessionId := uuid.New().String()
 
 	newSession := database.UserSession{
-		ID:            sessionId,
+		ID:            sessionId[0:14],
 		UserID:        userId,
 		ActiveExpires: time.Now().Add(3600 * time.Minute).Unix(),
 		IdleExpires:   0,
 	}
-	ClearSession(userId)
 	
 	statement, err := database.DB.Prepare("INSERT INTO user_session (id, user_id, active_expires, idle_expires) VALUES (?, ?, ?, ?)")
 	if err != nil {
