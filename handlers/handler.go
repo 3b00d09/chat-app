@@ -21,7 +21,7 @@ type Message struct {
 
 type PageData struct {
 	User database.User
-	Items []interface{}
+	Users []string
 	Messages []Message
 	Chat bool
 	TargetUser string
@@ -32,21 +32,52 @@ var count = 0;
 
 func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 
+	var User database.User  = auth.AuthenticateRequest(w, r)
+
+	if(User.ID == ""){
+		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+		return
+	}
+
 	count = count + 1
 	messages = append(messages, Message{Content: "Hello", Sender: "John", Date: "12:00", Count: count})
 
+	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username != ?")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer statement.Close()
+
+	rows, err := statement.Query(User.Username)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var results []string
+	for rows.Next() {
+        var username string
+        err := rows.Scan(&username)
+        if err != nil {
+            log.Fatal(err)
+        }
+        results = append(results, username)
+    }
+
+
 	// still have to pass in chat.html because it will error out even if i have an if statement wrapping it in the template
 	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html"))
-	var User database.User  = auth.AuthenticateRequest(w, r)
 
 	data := PageData{
 		User: User,
-		Items: make([]interface{}, 10),
+		Users: results,
 		Messages: messages,
 		Chat: false,
 	}
 
-	err := templates.ExecuteTemplate(w, "layout.html", data)
+	err = templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
 		return
@@ -184,9 +215,6 @@ func HandleSearchRoute(w http.ResponseWriter, r *http.Request) {
         results = append(results, username)
     }
 
-    if err = rows.Err(); err != nil {
-        log.Fatal(err)
-    }
 	var html string
 
 	if len(results) == 0 {
@@ -226,7 +254,7 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 
 	data := PageData{
 		User: User,
-		Items: make([]interface{}, 10),
+		Users: []string{},
 		Messages: messages,
 		Chat: true,
 		TargetUser: targetUser,

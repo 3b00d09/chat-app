@@ -129,9 +129,10 @@ func CreateSession(username string) http.Cookie {
     }
 
 	sessionId := uuid.New().String()
+	sessionId = sessionId[0:14]
 
 	newSession := database.UserSession{
-		ID:            sessionId[0:14],
+		ID:            sessionId,
 		UserID:        userId,
 		ActiveExpires: time.Now().Add(3600 * time.Minute).Unix(),
 		IdleExpires:   0,

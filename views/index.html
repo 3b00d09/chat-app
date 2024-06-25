@@ -18,8 +18,10 @@
                     </div>
                     <div class="flex-1 overflow-y-auto">
                         <ul class="p-0 list-none">
-                            {{range .Items}}
-                                {{template "chat-item"}}
+                            {{range .Users}}
+                                <li>
+                                    <a href="/chat/{{.}}" class="flex items-center gap-2 p-4 w-full text-sm">{{.}}</a>
+                                </li>
                             {{end}}
                         </ul>
                     </div>
@@ -35,15 +37,6 @@
 
 </div>
 {{template "search-modal"}}
-{{end}}
-
-
-
-
-{{define "chat-item"}}
-    <li>
-        <a href="/" class="flex items-center gap-2 p-4 w-full text-sm">Item</a>
-    </li>
 {{end}}
 
 
