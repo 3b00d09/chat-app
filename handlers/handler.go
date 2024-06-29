@@ -16,7 +16,6 @@ type Message struct {
 	Content string
 	Sender  string
 	Date   string
-	Count int
 }
 
 type PageData struct {
@@ -28,7 +27,6 @@ type PageData struct {
 }
 
 var messages []Message = []Message{}
-var count = 0;
 
 func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 
@@ -39,33 +37,7 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	count = count + 1
-	messages = append(messages, Message{Content: "Hello", Sender: "John", Date: "12:00", Count: count})
-
-	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username != ?")
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer statement.Close()
-
-	rows, err := statement.Query(User.Username)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	var results []string
-	for rows.Next() {
-        var username string
-        err := rows.Scan(&username)
-        if err != nil {
-            log.Fatal(err)
-        }
-        results = append(results, username)
-    }
-
+	results := database.FetchSidebarUsers(User.Username)
 
 	// still have to pass in chat.html because it will error out even if i have an if statement wrapping it in the template
 	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html"))
@@ -77,7 +49,7 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 		Chat: false,
 	}
 
-	err = templates.ExecuteTemplate(w, "layout.html", data)
+	err := templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
 		return
@@ -238,6 +210,8 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
 		return
 	}
+
+	results := database.FetchSidebarUsers(User.Username)
 	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username == ?")
 
 	if err != nil {
@@ -252,9 +226,12 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		targetUser = ""
 	}
 
+	messages = append(messages, Message{Content: "Hello", Sender: User.Username, Date: "12:00"})
+	messages = append(messages, Message{Content: "Hello!!", Sender: targetUser, Date: "13:00"})
+
 	data := PageData{
 		User: User,
-		Users: []string{},
+		Users: results,
 		Messages: messages,
 		Chat: true,
 		TargetUser: targetUser,

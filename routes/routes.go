@@ -22,7 +22,7 @@ func SetupRoutes() *chi.Mux {
 	})
 
 	r.Get("/", handler.HandleIndexRoute)
-	r.Get("/{user}", handler.HandleChatRoute)
+	r.Get("/chat/{user}", handler.HandleChatRoute)
 	r.Get("/login", handler.HandleLoginRoute)
 	r.Post("/login", handler.HandleLoginSubmission)
 	r.Get("/register", handler.HandleRegisterRoute)

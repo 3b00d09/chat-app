@@ -15,3 +15,5 @@ module.exports = {
   plugins: [],
 }
 
+
+//npx tailwindcss -i ./assets/styles.css -o ./assets/output.css --watch

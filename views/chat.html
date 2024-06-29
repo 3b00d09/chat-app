@@ -1,11 +1,27 @@
 {{define "chat" }}
+    <div class="flex-1 grid grid-cols-1">
+        {{if gt (len .TargetUser)  0}}
+            <div class="border-b py-8 px-4 flex items-center h-fit">
+                Chatting with {{.TargetUser}}
+            </div>
 
-<div class="border-b flex h-[60px] gap-2 items-center px-4">
-    {{if eq (len .TargetUser) 0}}
-        No user found
-    {{else}}
-        Chatting with {{.TargetUser}}
-    {{end}}
-</div>
+            <div class="bg-red-900 p-6 grid gap-6 self-end flex-1">
+                {{range .Messages}}
+                    {{if eq .Sender $.User.Username}}
+                        <div class="flex gap-4 items-center">
+                            <p>{{.Sender}}</p>
+                            <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
+                        </div>
 
+                    {{else}}
+                        <div class="flex gap-4 items-center justify-end">
+                            <p class="bg-primary
+                            p-2 rounded w-1/2">{{.Content}}</p>
+                            <p>{{.Sender}}</p>
+                        </div>
+                    {{end}}
+                {{end}}
+            </div>
+        {{end}}
+    </div>
 {{end}}

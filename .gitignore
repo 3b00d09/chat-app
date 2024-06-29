@@ -1,1 +1,4 @@
 .env
+
+# tmp dir created by the air package
+tmp 
