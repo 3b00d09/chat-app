@@ -28,6 +28,8 @@ func init() {
 		log.Fatal("Connection to database failed")
 	}
 
+	RunSchema(DB)
+
 }
 
 func SetupDB() (*sql.DB, error) {

@@ -17,6 +17,13 @@ func RunSchema(db *sql.DB) {
 		active_expires INTEGER NOT NULL,
 		idle_expires INTEGER NOT NULL
 	);
+
+	CREATE TABLE IF NOT EXISTS messages(
+		id TEXT NOT NULL PRIMARY KEY,
+		user_id TEXT NOT NULL REFERENCES user(id),
+		message TEXT NOT NULL,
+		created_at INTEGER NOT NULL
+	);
 	`
 
 	db.Exec(create)
