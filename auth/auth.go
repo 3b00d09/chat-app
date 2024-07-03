@@ -55,7 +55,8 @@ func AuthenticateSession(cookie string) database.User {
 
 }
 
-func UserExists(username string) bool {
+func UserExists(User database.UserCredentials) bool {
+
 
 	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username = ?")
 
@@ -67,7 +68,7 @@ func UserExists(username string) bool {
 
 
 	var name string
-	err = statement.QueryRow(username).Scan(&name)
+	err = statement.QueryRow(User.Username).Scan(&name)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -77,11 +78,51 @@ func UserExists(username string) bool {
 		log.Fatal(err)
 	}
 
+	statement, err = database.DB.Prepare("SELECT password FROM user WHERE username = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var password []byte
+	err = statement.QueryRow(User.Username).Scan(&password)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !CheckPasswordHash(User.Password, []byte(password)) {
+		return false
+	}
+
 	return true
 
 }
 
+func IsUniqueUsername(username string) bool {
+	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username = ?")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer statement.Close()
+
+	var name string
+	err = statement.QueryRow(username).Scan(&name)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("User doesnt exist")
+			return true
+		}
+		log.Fatal(err)
+	}
+
+	return false
+
+}
+
 func CreateUser(user database.UserCredentials) http.Cookie {
+	fmt.Println("Creating User")
 
 	hashedPassword := GeneratHashedPassword(user.Password)
 

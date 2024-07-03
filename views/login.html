@@ -4,12 +4,19 @@
 
 {{define "content"}}
 
-<form method="POST" action="/login" class="flex flex-col gap-2 text-black">
-    <h1 class="text-center text-white">Login</h1>
-    <input name="email" class="p-2 rounded-lg" type ="text" placeholder="email">
-    <input name="password" class="p-2 rounded-lg" placeholder="password">
-    <button class="bg-zinc-800 text-white" type="submit">Log In</button>
-</form>
+    <form method="POST" action="/login" class="flex flex-col gap-2 text-black">
+        <h1 class="text-center text-white">Login</h1>
+        {{if .PreviousUsername}}
+            <input name="username" class="p-2 rounded-lg" type ="text" placeholder="username" value="{{.PreviousUsername}}">
+        {{else}}
+            <input name="username" class="p-2 rounded-lg" type ="text" placeholder="username">
+        {{end}}
+        <input name="password" class="p-2 rounded-lg" placeholder="password">
+        <button class="bg-zinc-800 text-white" type="submit">Log In</button>
+    </form>
 
+    {{if .ErrorMessage}}
+    <p class="bg-red-900 text-white text-center p-2 rounded-md">{{ .ErrorMessage }}</p>
+    {{end}}
 
 {{end}}

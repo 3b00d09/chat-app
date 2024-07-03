@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -92,13 +93,18 @@ func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleLogoutRoute(w http.ResponseWriter, r *http.Request) {
+
+   // Set Cache-Control headers to prevent caching from keeping the cookie alive :)))
+    w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+    w.Header().Set("Pragma", "no-cache")
+    w.Header().Set("Expires", "0")
+
 	cookie, err := r.Cookie("session_token")
 
 	if err != nil || cookie == nil{
 		http.Redirect(w, r, "/", http.StatusMovedPermanently)
 		return
 	}
-
 
 	auth.ClearSession(cookie.Value)
 
@@ -107,6 +113,7 @@ func HandleLogoutRoute(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
+		Expires: time.Unix(0, 0),
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
@@ -118,18 +125,32 @@ func HandleLogoutRoute(w http.ResponseWriter, r *http.Request) {
 
 func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	username := r.FormValue("email")
+	username := r.FormValue("username")
 	user := database.UserCredentials{
 		Username: username,
 		Password: r.FormValue("password"),
 	}
-	if auth.UserExists(user.Username) {
+	if auth.UserExists(user) {
 		sessionCookie := auth.CreateSession(username)
 		http.SetCookie(w, &sessionCookie)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 
 	}else{
-		log.Fatal("invalid credentials")
+		PageData := struct {
+			// layout.html expects a User struct even if empty
+			User database.User
+			ErrorMessage string
+			PreviousUsername string
+		}{
+			ErrorMessage: "Invalid Credentials",
+			PreviousUsername: username,
+		}
+		templates := template.Must(template.ParseFiles("views/layout.html", "views/login.html"))
+		err := templates.ExecuteTemplate(w, "layout.html", PageData)
+		if err != nil {
+			http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -137,8 +158,8 @@ func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
 	username := r.FormValue("username")
-	exists := auth.UserExists(username)
-	if !exists {
+	isUnique := auth.IsUniqueUsername(username)
+	if isUnique {
 		if r.FormValue("password1") == r.FormValue("password2") {
 			user := database.UserCredentials{
 				Username: username,
@@ -148,10 +169,37 @@ func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 			http.SetCookie(w, &cookie)
 			http.Redirect(w, r, "/", http.StatusMovedPermanently)
 		} else {
-			fmt.Print("Passwords Dont Match")
+			template := template.Must(template.ParseFiles("views/layout.html", "views/register.html"))
+			PageData := struct {
+				// layout.html expects a User struct even if empty
+				User database.User
+				ErrorMessage string
+				PreviousUsername string
+			}{
+				ErrorMessage: "Passwords do not match",
+				PreviousUsername: username,
+			}
+			err := template.ExecuteTemplate(w, "layout.html", PageData)
+			if err != nil {
+				http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 	} else {
-		fmt.Print("User Exists")
+		template := template.Must(template.ParseFiles("views/layout.html", "views/register.html"))
+		PageData := struct {
+			// layout.html expects a User struct even if empty
+			User database.User
+			ErrorMessage string
+			PreviousUsername string
+		}{
+			ErrorMessage: "Username already exists",
+		}
+		err := template.ExecuteTemplate(w, "layout.html", PageData)
+		if err != nil {
+			http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 }
