@@ -24,7 +24,7 @@ type PageData struct {
 	Users []string
 	Messages []Message
 	Chat bool
-	TargetUser string
+	TargetUser database.User
 }
 
 var messages []Message = []Message{}
@@ -260,7 +260,7 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := database.FetchSidebarUsers(User.Username)
-	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username == ?")
+	statement, err := database.DB.Prepare("SELECT id, username FROM user WHERE username = ?")
 
 	if err != nil {
 		log.Fatal(err)
@@ -268,21 +268,43 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	defer statement.Close()
 
 	rows := statement.QueryRow(targetUser)
-	err = rows.Scan(&targetUser)
+
+	var recepientUser database.User
+	err = rows.Scan(&recepientUser.ID, &recepientUser.Username)
 
 	if err != nil {
-		targetUser = ""
+		recepientUser.Username = ""
 	}
 
-	messages = append(messages, Message{Content: "Hello", Sender: User.Username, Date: "12:00"})
-	messages = append(messages, Message{Content: "Hello!!", Sender: targetUser, Date: "13:00"})
+	statement, err = database.DB.Prepare("SELECT user.username, messages.message, messages.created_at FROM messages LEFT JOIN user ON messages.user_id = user.id WHERE user.id IN (?, ?) ORDER BY messages.created_at ASC")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rows2, err := statement.Query(User.ID, recepientUser.ID)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for rows2.Next(){
+		var message Message
+		err := rows2.Scan(&message.Sender, &message.Content, &message.Date)
+		if err != nil {
+			fmt.Println(err)
+		}
+		messages = append(messages, message)
+	}
+
+	
 
 	data := PageData{
 		User: User,
 		Users: results,
 		Messages: messages,
 		Chat: true,
-		TargetUser: targetUser,
+		TargetUser: recepientUser,
 	}
 
 	err = templates.ExecuteTemplate(w, "layout.html", data)
