@@ -5,18 +5,18 @@
 {{define "content"}}
 
 <div class="w-full h-full p-16 grid place-items-center">
-    <div class="bg-primary w-full h-full border-2 border-black rounded-lg flex flex-col">
+    <div class="bg-primary w-full h-full border-2 border-black rounded-lg flex flex-col overflow-hidden">
             <div class="flex border-b items-center px-2 py-4">
                 <input type="text" class="w-full p-2 border-2 border-black rounded-lg" placeholder="Search friends..." />
                 <button id="searchBtn">Add Users</button>
             </div>
-            <div class="flex flex-1">
+            <div class="flex h-auto overflow-y-auto">
                 <div class="border-r flex flex-col">
                     <div class="border-b p-4 flex items-center">
                         <p>pfp</p>
                         <h2 class="p-4 flex items-center">{{.User.Username}}</h2>
                     </div>
-                    <div class="flex-1 overflow-y-auto">
+                    <div class="flex-1">
                         <ul class="p-0 list-none">
                             {{range .Users}}
                                 <li>

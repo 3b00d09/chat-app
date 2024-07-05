@@ -175,7 +175,7 @@ func CreateSession(username string) http.Cookie {
 	newSession := database.UserSession{
 		ID:            sessionId,
 		UserID:        userId,
-		ActiveExpires: time.Now().Add(3600 * time.Minute).Unix(),
+		ActiveExpires: time.Now().Add(3600 * time.Hour * 24 * 7).Unix(),
 		IdleExpires:   0,
 	}
 	

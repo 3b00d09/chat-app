@@ -1,11 +1,11 @@
 {{define "chat" }}
-    <div class="flex-1 grid grid-cols-1">
+    <div class="flex-1 flex flex-col">
         {{if gt (len .TargetUser.Username)  0}}
             <div class="border-b py-8 px-4 flex items-center h-fit">
                 Chatting with {{.TargetUser.Username}}
             </div>
 
-            <div class="bg-red-900 p-6 grid gap-6 self-end flex-1">
+            <div class="bg-red-900 p-6 grid gap-6 self-end w-full">
                 {{range .Messages}}
                     {{if eq .Sender $.User.Username}}
                         <div class="flex gap-4 items-center">
@@ -21,6 +21,11 @@
                         </div>
                     {{end}}
                 {{end}}
+                <div class="flex gap-4 w-full justify-center items-center">
+                    <input class="w-3/4 p-2 text-black" name="chat-message">
+                    <button class="w-fit bg-accent text-white p-2 rounded-lg">Send</button>
+                </div>
+                
             </div>
         {{end}}
     </div>

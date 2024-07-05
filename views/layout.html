@@ -10,8 +10,8 @@
     <title>{{template "title" .}}</title>
 </head>
 
-<body class="text-white bg-background flex flex-col h-screen">
-    <header class="grid bg-zinc-800 p-4 w-full grid-cols-2">
+<body class="text-white bg-background flex flex-col">
+    <header class="grid bg-zinc-800 p-4 w-full grid-cols-2 items-center h-[7vh]">
         {{if .User.Username}}
             <p class="justify-self-start">Welcome {{ .User.Username }}</p>
             <a class="justify-self-end" href="logout">Log Out</a>
@@ -23,9 +23,9 @@
         {{end}}
     </header>
 
-    <main class="flex flex-col gap-2 justify-center items-center grow">
+    <main class="flex flex-col gap-2 justify-center items-center h-[93vh] overflow-hidden">
         {{template "content" .}}
-    </main>
+    </main>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
 </body>
 
 </html>
