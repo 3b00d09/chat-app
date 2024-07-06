@@ -369,7 +369,11 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 		fmt.Println("Error inserting message")
 	}
 
-	htmlResponse := fmt.Sprintf( `<p  class="bg-primary p-2 rounded w-1/2">%s</p><p>%s</p>`,  message, User.Username)
+	htmlResponse := fmt.Sprintf( `
+	<div class="flex gap-4 items-center justify-end">
+		<p class="bg-primary p-2 rounded w-1/2">%s</p>
+		<p>%s</p>
+	</div>`,  message, User.Username)
 
 
 	w.Write([]byte(htmlResponse))
