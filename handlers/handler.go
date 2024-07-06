@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type Message struct {
@@ -313,5 +314,64 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+}
+
+func HandleSendMessage(w http.ResponseWriter, r *http.Request){
+	fmt.Println("Sending message")
+
+	var User database.User  = auth.AuthenticateRequest(w, r)
+
+	if(User.ID == ""){
+		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+		return
+	}
+
+	r.ParseForm()
+	message := r.FormValue("chat-message")
+	if message == "" {
+		return
+	}
+
+	targetUser := r.FormValue("target-user")
+
+	if targetUser == "" {
+		return
+	}
+
+	statement, err := database.DB.Prepare("SELECT id, username FROM user WHERE username = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer statement.Close()
+
+	rows := statement.QueryRow(targetUser)
+
+	var recepientUser database.User
+	err = rows.Scan(&recepientUser.ID, &recepientUser.Username)
+
+	if err != nil {
+		fmt.Println("User not found")
+	}
+
+	statement, err = database.DB.Prepare("INSERT INTO messages (id, user_id, message, created_at) VALUES (?, ?, ?, ?)")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+
+	newRowId := uuid.New().String()
+	newRowId = newRowId[:8]
+	_, err = statement.Exec(newRowId, User.ID, message, time.Now().Unix())
+
+	if err != nil {
+		fmt.Println("Error inserting message")
+	}
+
+	htmlResponse := fmt.Sprintf( `<p  class="bg-primary p-2 rounded w-1/2">%s</p><p>%s</p>`,  message, User.Username)
+
+
+	w.Write([]byte(htmlResponse))
 
 }

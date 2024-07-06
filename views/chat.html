@@ -8,24 +8,27 @@
             <div class="bg-red-900 p-6 grid gap-6 self-end w-full">
                 {{range .Messages}}
                     {{if eq .Sender $.User.Username}}
-                        <div class="flex gap-4 items-center">
-                            <p>{{$.User.Username}}</p>
-                            <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
-                        </div>
-
-                    {{else}}
                         <div class="flex gap-4 items-center justify-end">
                             <p class="bg-primary
                             p-2 rounded w-1/2">{{.Content}}</p>
                             <p>{{.Sender}}</p>
                         </div>
+
+                    {{else}}
+                        <div class="flex gap-4 items-center">
+                            <p>{{$.User.Username}}</p>
+                            <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
+                        </div>
+
                     {{end}}
+                        <div id="latest-message" class="flex gap-4 items-center justify-end">
+                        </div> 
                 {{end}}
-                <div class="flex gap-4 w-full justify-center items-center">
+                <form hx-post="/send-message" hx-target="#latest-message" hx-swap="beforeend" class="flex gap-4 w-full justify-center items-center">
                     <input class="w-3/4 p-2 text-black" name="chat-message">
-                    <button class="w-fit bg-accent text-white p-2 rounded-lg">Send</button>
-                </div>
-                
+                    <button type="submit" class="w-fit bg-accent text-white p-2 rounded-lg">Send</button>
+                    <input type="hidden" name="target-user" value={{.TargetUser.Username}}>
+                </form>
             </div>
         {{end}}
     </div>
