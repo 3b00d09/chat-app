@@ -18,6 +18,8 @@ type Message struct {
 	Content string
 	Sender  string
 	Date   string
+	// helps with styling the message in the chat
+	RecipientMessage bool
 }
 
 type PageData struct {
@@ -25,7 +27,14 @@ type PageData struct {
 	Users []string
 	Messages []Message
 	Chat bool
-	TargetUser database.User
+	TargetUser string
+	FormData FormData
+}
+
+type FormData struct{
+	Values map[string]string
+	Error string
+	TargetUser string
 }
 
 var messages []Message = []Message{}
@@ -252,7 +261,7 @@ func HandleSearchRoute(w http.ResponseWriter, r *http.Request) {
 func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	targetUser := chi.URLParam(r, "user")
 
-	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html"))
+	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html", "templates/form.html"))
 	var User database.User  = auth.AuthenticateRequest(w, r)
 
 	if(User.ID == ""){
@@ -295,6 +304,11 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println(err)
 		}
+		if message.Sender == User.Username {
+			message.RecipientMessage = false
+		}else{
+			message.RecipientMessage = true
+		}
 		messages = append(messages, message)
 	}
 
@@ -305,7 +319,11 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		Users: results,
 		Messages: messages,
 		Chat: true,
-		TargetUser: recepientUser,
+		TargetUser: recepientUser.Username,
+		FormData: FormData{
+			Values: map[string]string{},
+			TargetUser: recepientUser.Username,
+		},
 	}
 
 	err = templates.ExecuteTemplate(w, "layout.html", data)
@@ -320,6 +338,7 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	fmt.Println("Sending message")
 
+	formTemplate := template.Must(template.ParseFiles("templates/form.html"))
 	var User database.User  = auth.AuthenticateRequest(w, r)
 
 	if(User.ID == ""){
@@ -330,6 +349,13 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	r.ParseForm()
 	message := r.FormValue("chat-message")
 	if message == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		formData := FormData{
+			Values: map[string]string{},
+			Error: "Message cannot be empty",
+			TargetUser: r.FormValue("target-user"),
+		}
+		formTemplate.Execute(w, formData)
 		return
 	}
 
@@ -369,13 +395,17 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 		fmt.Println("Error inserting message")
 	}
 
-	htmlResponse := fmt.Sprintf( `
-	<div class="flex gap-4 items-center justify-end">
-		<p class="bg-primary p-2 rounded w-1/2">%s</p>
-		<p>%s</p>
-	</div>`,  message, User.Username)
+	// htmlResponse := fmt.Sprintf( `
+	// <div class="flex gap-4 items-center justify-end">
+	// 	<p class="bg-primary p-2 rounded w-1/2">%s</p>
+	// 	<p>%s</p>
+	// </div>`,  message, User.Username)
 
+	formData := FormData{
+		Values: map[string]string{},
+		TargetUser: recepientUser.Username,
+	}
 
-	w.Write([]byte(htmlResponse))
-
-}
+	formTemplate.Execute(w, formData)
+	
+} 

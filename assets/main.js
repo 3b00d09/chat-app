@@ -1,3 +1,10 @@
+document.querySelector("body").addEventListener("htmx:beforeSwap", (e)=>{
+  if(e.detail.xhr.status === 422){
+    e.detail.shouldSwap = true;
+    e.detail.isError = false;
+  }
+})
+
 document.querySelector("#searchBtn").addEventListener("click",()=>{
     document.querySelector("#search-modal").showModal()
 })

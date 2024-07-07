@@ -1,34 +1,35 @@
 {{define "chat" }}
     <div class="flex-1 flex flex-col">
-        {{if gt (len .TargetUser.Username)  0}}
+        {{if gt (len .TargetUser)  0}}
             <div class="border-b py-8 px-4 flex items-center h-fit">
-                Chatting with {{.TargetUser.Username}}
+                Chatting with {{.TargetUser}}
             </div>
 
-            <div class="bg-red-900 p-6 grid gap-6 self-end w-full">
+            <div class="bg-black p-6 grid gap-6 self-end w-full">
                 {{range .Messages}}
-                    {{if eq .Sender $.User.Username}}
-                        <div class="flex gap-4 items-center justify-end">
-                            <p class="bg-primary
-                            p-2 rounded w-1/2">{{.Content}}</p>
-                            <p>{{.Sender}}</p>
-                        </div>
-
-                    {{else}}
-                        <div class="flex gap-4 items-center">
-                            <p>{{$.User.Username}}</p>
-                            <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
-                        </div>
-
-                    {{end}}
+                    {{template "message" .}}
                 {{end}}
                 <div id="latest-message"></div> 
-                <form hx-post="/send-message" hx-target="#latest-message" hx-swap="beforebegin" class="flex gap-4 w-full justify-center items-center">
-                    <input class="w-3/4 p-2 text-black" name="chat-message">
-                    <button type="submit" class="w-fit bg-accent text-white p-2 rounded-lg">Send</button>
-                    <input type="hidden" name="target-user" value={{.TargetUser.Username}}>
-                </form>
+                {{template "form" .FormData}}
             </div>
         {{end}}
     </div>
 {{end}}
+
+
+
+{{block "message" .}}
+    {{if .RecipientMessage}}
+        <div class="flex gap-4 items-center">
+            <p>{{.Sender}}</p>
+            <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
+        </div> 
+    {{else}}
+        <div class="flex gap-4 items-center justify-end">
+            <p class="bg-primary
+            p-2 rounded w-1/2">{{.Content}}</p>
+            <p>{{.Sender}}</p>
+        </div>
+    {{end}}
+{{end}}
+
