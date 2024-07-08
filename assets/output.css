@@ -668,6 +668,10 @@ video {
   flex-direction: column;
 }
 
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
 .place-content-center {
   place-content: center;
 }
@@ -773,11 +777,6 @@ video {
   background-color: rgb(59 79 114 / var(--tw-bg-opacity));
 }
 
-.bg-red-500 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(239 68 68 / var(--tw-bg-opacity));
-}
-
 .bg-red-900 {
   --tw-bg-opacity: 1;
   background-color: rgb(127 29 29 / var(--tw-bg-opacity));
@@ -854,22 +853,6 @@ video {
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity));
-}
-
-.\[name\:\'chat-message\'\] {
-  name: 'chat-message';
-}
-
-.\[name\:\'target-user\'\] {
-  name: 'target-user';
-}
-
-.\[name\:chat-message\] {
-  name: chat-message;
-}
-
-.\[name\:target-user\] {
-  name: target-user;
 }
 
 *{

@@ -1,0 +1,31 @@
+{{block "message" .}}
+    {{if .RecipientMessage}}
+        <div class="flex gap-4 items-center">
+            <p>{{.Sender}}</p>
+            <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
+        </div> 
+    {{else}}
+        <div class="flex gap-4 items-center justify-end">
+            <p class="bg-primary
+            p-2 rounded w-1/2">{{.Content}}</p>
+            <p>{{.Sender}}</p>
+        </div>
+    {{end}}
+{{end}}
+
+{{block "oob-message" .}}
+    <div id="messages" hx-swap-oob="beforeend">
+        {{if .RecipientMessage}}
+            <div class="flex gap-4 items-center">
+                <p>{{.Sender}}</p>
+                <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
+            </div> 
+        {{else}}
+            <div class="flex gap-4 items-center justify-end">
+                <p class="bg-primary
+                p-2 rounded w-1/2">{{.Content}}</p>
+                <p>{{.Sender}}</p>
+            </div>
+        {{end}}
+    </div>
+{{end}}

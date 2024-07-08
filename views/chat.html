@@ -6,10 +6,11 @@
             </div>
 
             <div class="bg-black p-6 grid gap-6 self-end w-full">
-                {{range .Messages}}
-                    {{template "message" .}}
-                {{end}}
-                <div id="latest-message"></div> 
+                <div id="messages" class="grid gap-6 w-full">
+                    {{range .Messages}}
+                        {{template "message" .}}
+                    {{end}}
+                </div>
                 {{template "form" .FormData}}
             </div>
         {{end}}
@@ -18,18 +19,5 @@
 
 
 
-{{block "message" .}}
-    {{if .RecipientMessage}}
-        <div class="flex gap-4 items-center">
-            <p>{{.Sender}}</p>
-            <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
-        </div> 
-    {{else}}
-        <div class="flex gap-4 items-center justify-end">
-            <p class="bg-primary
-            p-2 rounded w-1/2">{{.Content}}</p>
-            <p>{{.Sender}}</p>
-        </div>
-    {{end}}
-{{end}}
+
 

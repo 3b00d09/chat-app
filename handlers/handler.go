@@ -51,7 +51,7 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 	results := database.FetchSidebarUsers(User.Username)
 
 	// still have to pass in chat.html because it will error out even if i have an if statement wrapping it in the template
-	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html"))
+	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html", "templates/form.html", "templates/message.html"))
 
 	data := PageData{
 		User: User,
@@ -261,7 +261,7 @@ func HandleSearchRoute(w http.ResponseWriter, r *http.Request) {
 func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	targetUser := chi.URLParam(r, "user")
 
-	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html", "templates/form.html"))
+	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html", "templates/form.html", "templates/message.html"))
 	var User database.User  = auth.AuthenticateRequest(w, r)
 
 	if(User.ID == ""){
@@ -336,9 +336,7 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleSendMessage(w http.ResponseWriter, r *http.Request){
-	fmt.Println("Sending message")
 
-	formTemplate := template.Must(template.ParseFiles("templates/form.html"))
 	var User database.User  = auth.AuthenticateRequest(w, r)
 
 	if(User.ID == ""){
@@ -347,14 +345,18 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	}
 
 	r.ParseForm()
+	formTemplate := template.Must(template.ParseFiles("templates/form.html"))
+	
+	formData := FormData{
+		Values: map[string]string{},
+		TargetUser: r.FormValue("target-user"),
+		Error: "",
+	}
+
 	message := r.FormValue("chat-message")
 	if message == "" {
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		formData := FormData{
-			Values: map[string]string{},
-			Error: "Message cannot be empty",
-			TargetUser: r.FormValue("target-user"),
-		}
+		formData.Error = "Message cannot be empty"
 		formTemplate.Execute(w, formData)
 		return
 	}
@@ -362,13 +364,20 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	targetUser := r.FormValue("target-user")
 
 	if targetUser == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		formData.Error = "Recipient not found, please refresh the page and try again."
+		formTemplate.Execute(w, formData)
 		return
 	}
 
 	statement, err := database.DB.Prepare("SELECT id, username FROM user WHERE username = ?")
 	if err != nil {
-		log.Fatal(err)
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		formData.Error = "Something went wrong. Please try again later"
+		formTemplate.Execute(w, formData)
+		return
 	}
+
 	defer statement.Close()
 
 	rows := statement.QueryRow(targetUser)
@@ -377,35 +386,45 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	err = rows.Scan(&recepientUser.ID, &recepientUser.Username)
 
 	if err != nil {
-		fmt.Println("User not found")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		formData.Error = "Recipient not found, please refresh the page and try again."
+		formTemplate.Execute(w, formData)
+		return
 	}
 
 	statement, err = database.DB.Prepare("INSERT INTO messages (id, user_id, message, created_at) VALUES (?, ?, ?, ?)")
 
 	if err != nil {
-		log.Fatal(err)
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		formData.Error = "Something went wrong. Please try again later."
+		formTemplate.Execute(w, formData)
+		return
 	}
 
 
 	newRowId := uuid.New().String()
 	newRowId = newRowId[:8]
-	_, err = statement.Exec(newRowId, User.ID, message, time.Now().Unix())
+	timestamp := time.Now().Unix()
+	_, err = statement.Exec(newRowId, User.ID, message, timestamp)
 
 	if err != nil {
-		fmt.Println("Error inserting message")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		formData.Error = "Something went wrong. Please try again later."
+		formTemplate.Execute(w, formData)
+		return
 	}
 
-	// htmlResponse := fmt.Sprintf( `
-	// <div class="flex gap-4 items-center justify-end">
-	// 	<p class="bg-primary p-2 rounded w-1/2">%s</p>
-	// 	<p>%s</p>
-	// </div>`,  message, User.Username)
+	messageTemplate := template.Must(template.ParseFiles("templates/message.html"))
 
-	formData := FormData{
-		Values: map[string]string{},
-		TargetUser: recepientUser.Username,
+	messageData := Message{
+		Content: message,
+		Sender: User.Username,
+		Date: string(timestamp),
+		RecipientMessage: false,
 	}
 
+	// only pulls out the "oob-message" block from the message.html template, and passes it messageData
+	messageTemplate.ExecuteTemplate(w, "oob-message", messageData)
 	formTemplate.Execute(w, formData)
 	
 } 

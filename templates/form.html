@@ -2,14 +2,15 @@
     <form id="message-form" 
     hx-post="/send-message"
     hx-swap="outerHTML" 
-    class="flex gap-4 w-full justify-center items-center">
+    class="flex flex-wrap gap-4 w-full justify-center items-center">
         <input class="w-3/4 p-2 text-black" name="chat-message">
         <button type="submit" class="w-fit bg-accent text-white p-2 rounded-lg">Send</button>
         <input type="hidden" name="target-user" value={{.TargetUser}}>
+    
+        {{if .Error}}
+            <div id="error-message" class="grid place-content-center w-full">
+                <p class="text-center w-fit bg-red-900 p-2">{{.Error}}</p>
+            </div>
+        {{end}}
     </form>
-    {{if .Error}}
-        <div id="error-message" class="w-full grid place-content-center">
-            <p class="text-center w-fit bg-red-900 p-2">{{.Error}}</p>
-        </div>
-    {{end}}
 {{end}}
