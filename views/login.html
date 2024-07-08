@@ -3,20 +3,23 @@
 {{end}}
 
 {{define "content"}}
+    {{template "login-form" .FormData}}
+{{end}}
 
-    <form method="POST" action="/login" class="flex flex-col gap-2 text-black">
+
+{{block "login-form" .}}
+    <form method="POST" hx-post="/login" hx-swap="outerHTML" class="flex flex-col gap-2 text-black">
         <h1 class="text-center text-white">Login</h1>
-        {{if .PreviousUsername}}
-            <input name="username" class="p-2 rounded-lg" type ="text" placeholder="username" value="{{.PreviousUsername}}">
+        {{if .Values.PreviousUsername}}
+            <input name="username" class="p-2 rounded-lg" type ="text" placeholder="username" value="{{.Values.PreviousUsername}}">
         {{else}}
             <input name="username" class="p-2 rounded-lg" type ="text" placeholder="username">
         {{end}}
         <input name="password" class="p-2 rounded-lg" placeholder="password">
         <button class="bg-zinc-800 text-white" type="submit">Log In</button>
+
+        {{if .Error}}
+        <p class="bg-red-900 text-white text-center p-2 rounded-md">{{ .Error }}</p>
+        {{end}}
     </form>
-
-    {{if .ErrorMessage}}
-    <p class="bg-red-900 text-white text-center p-2 rounded-md">{{ .ErrorMessage }}</p>
-    {{end}}
-
 {{end}}

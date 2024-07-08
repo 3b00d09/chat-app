@@ -14,11 +14,11 @@
                 <div class="border-r flex flex-col">
                     <div class="border-b p-4 flex items-center">
                         <p>pfp</p>
-                        <h2 class="p-4 flex items-center">{{.User.Username}}</h2>
+                        <h2 class="p-4 flex items-center">{{.PageData.User.Username}}</h2>
                     </div>
                     <div class="flex-1">
                         <ul class="p-0 list-none">
-                            {{range .Users}}
+                            {{range .PageData.Users}}
                                 <li>
                                     <a href="/chat/{{.}}" class="flex items-center gap-2 p-4 w-full text-sm">{{.}}</a>
                                 </li>

@@ -14,28 +14,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Message struct {
-	Content string
-	Sender  string
-	Date   string
-	// helps with styling the message in the chat
-	RecipientMessage bool
-}
-
-type PageData struct {
-	User database.User
-	Users []string
-	Messages []Message
-	Chat bool
-	TargetUser string
-	FormData FormData
-}
-
-type FormData struct{
-	Values map[string]string
-	Error string
-	TargetUser string
-}
 
 var messages []Message = []Message{}
 
@@ -53,11 +31,14 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 	// still have to pass in chat.html because it will error out even if i have an if statement wrapping it in the template
 	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html", "templates/form.html", "templates/message.html"))
 
-	data := PageData{
-		User: User,
-		Users: results,
-		Messages: messages,
-		Chat: false,
+	data := LayoutData{
+		PageData: PageData{
+			User: User,
+			Users: results,
+			Messages: messages,
+			TargetUser: "",
+		},
+		Username: User.Username,
 	}
 
 	err := templates.ExecuteTemplate(w, "layout.html", data)
@@ -67,152 +48,7 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HandleRegisterRoute(w http.ResponseWriter, r *http.Request) {
-	templates := template.Must(template.ParseFiles("views/layout.html", "views/register.html"))
-	var User database.User  = auth.AuthenticateRequest(w, r)
 
-	if(User.ID != ""){
-		http.Redirect(w, r, "/", http.StatusMovedPermanently)
-		return
-	}
-
-	err := templates.ExecuteTemplate(w, "layout.html", nil)
-
-	if err != nil {
-		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func HandleLoginRoute(w http.ResponseWriter, r *http.Request) {
-	templates := template.Must(template.ParseFiles("views/layout.html", "views/login.html"))
-
-	var User database.User  = auth.AuthenticateRequest(w, r)
-
-	if(User.ID != ""){
-		fmt.Print("User is already logged in")
-		http.Redirect(w, r, "/", http.StatusMovedPermanently)
-		return
-	}
-
-	err := templates.ExecuteTemplate(w, "layout.html", nil)
-	if err != nil {
-		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func HandleLogoutRoute(w http.ResponseWriter, r *http.Request) {
-
-   // Set Cache-Control headers to prevent caching from keeping the cookie alive :)))
-    w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-    w.Header().Set("Pragma", "no-cache")
-    w.Header().Set("Expires", "0")
-
-	cookie, err := r.Cookie("session_token")
-
-	if err != nil || cookie == nil{
-		http.Redirect(w, r, "/", http.StatusMovedPermanently)
-		return
-	}
-
-	auth.ClearSession(cookie.Value)
-
-	newCookie := http.Cookie{
-		Name:     "session_token",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		Expires: time.Unix(0, 0),
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	}
-	http.SetCookie(w, &newCookie)
-	http.Redirect(w, r, "/login", http.StatusMovedPermanently)
-	
-}
-
-func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	username := r.FormValue("username")
-	user := database.UserCredentials{
-		Username: username,
-		Password: r.FormValue("password"),
-	}
-	if auth.UserExists(user) {
-		sessionCookie := auth.CreateSession(username)
-		http.SetCookie(w, &sessionCookie)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-
-	}else{
-		PageData := struct {
-			// layout.html expects a User struct even if empty
-			User database.User
-			ErrorMessage string
-			PreviousUsername string
-		}{
-			ErrorMessage: "Invalid Credentials",
-			PreviousUsername: username,
-		}
-		templates := template.Must(template.ParseFiles("views/layout.html", "views/login.html"))
-		err := templates.ExecuteTemplate(w, "layout.html", PageData)
-		if err != nil {
-			http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-
-	username := r.FormValue("username")
-	isUnique := auth.IsUniqueUsername(username)
-	if isUnique {
-		if r.FormValue("password1") == r.FormValue("password2") {
-			user := database.UserCredentials{
-				Username: username,
-				Password: r.FormValue("password1"),
-			}
-			var cookie http.Cookie = auth.CreateUser(user)
-			http.SetCookie(w, &cookie)
-			http.Redirect(w, r, "/", http.StatusMovedPermanently)
-		} else {
-			template := template.Must(template.ParseFiles("views/layout.html", "views/register.html"))
-			PageData := struct {
-				// layout.html expects a User struct even if empty
-				User database.User
-				ErrorMessage string
-				PreviousUsername string
-			}{
-				ErrorMessage: "Passwords do not match",
-				PreviousUsername: username,
-			}
-			err := template.ExecuteTemplate(w, "layout.html", PageData)
-			if err != nil {
-				http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
-	} else {
-		template := template.Must(template.ParseFiles("views/layout.html", "views/register.html"))
-		PageData := struct {
-			// layout.html expects a User struct even if empty
-			User database.User
-			ErrorMessage string
-			PreviousUsername string
-		}{
-			ErrorMessage: "Username already exists",
-		}
-		err := template.ExecuteTemplate(w, "layout.html", PageData)
-		if err != nil {
-			http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-}
 
 func HandleSearchRoute(w http.ResponseWriter, r *http.Request) {
 
@@ -312,21 +148,22 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		messages = append(messages, message)
 	}
 
-	
 
-	data := PageData{
-		User: User,
-		Users: results,
-		Messages: messages,
-		Chat: true,
-		TargetUser: recepientUser.Username,
-		FormData: FormData{
-			Values: map[string]string{},
+	LayoutData := LayoutData{
+		PageData: PageData{
+			User: User,
+			Users: results,
+			Messages: messages,
 			TargetUser: recepientUser.Username,
 		},
+		FormData: FormData{
+				Values: map[string]string{},
+				TargetUser: recepientUser.Username,
+			},
+		Username: User.Username,
 	}
 
-	err = templates.ExecuteTemplate(w, "layout.html", data)
+	err = templates.ExecuteTemplate(w, "layout.html", LayoutData)
 	
 	if err != nil {
 		http.Error(w, "Failed to parse template"+err.Error(), http.StatusInternalServerError)

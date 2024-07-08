@@ -1,13 +1,13 @@
 {{define "chat" }}
     <div class="flex-1 flex flex-col">
-        {{if gt (len .TargetUser)  0}}
+        {{if gt (len .PageData.TargetUser)  0}}
             <div class="border-b py-8 px-4 flex items-center h-fit">
-                Chatting with {{.TargetUser}}
+                Chatting with {{.PageData.TargetUser}}
             </div>
 
             <div class="bg-black p-6 grid gap-6 self-end w-full">
                 <div id="messages" class="grid gap-6 w-full">
-                    {{range .Messages}}
+                    {{range .PageData.Messages}}
                         {{template "message" .}}
                     {{end}}
                 </div>
