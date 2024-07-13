@@ -15,3 +15,7 @@ document.querySelector("#search-modal").addEventListener("click", (e) => {
     e.currentTarget.close();
   }
 }); 
+
+window.addEventListener("popstate ", (e) => {
+  console.log("popstate  event fired")
+});

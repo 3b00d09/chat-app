@@ -3,18 +3,31 @@ package handler
 import (
 	"chat-app/auth"
 	"chat-app/database"
+	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"nhooyr.io/websocket"
 )
 
+type Connection struct {
+    ws   *websocket.Conn
+    user string
+}
 
+var (
+    connections = make(map[string]*Connection)
+	// a mutex is mutual exclusion lock. It is used to synchronize access to shared resources so we dont get race conditions and locks a resource while its being used.
+    connMutex   sync.Mutex
+)
 var messages []Message = []Message{}
 
 func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +183,39 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	
+}
+
+func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
+	user := chi.URLParam(r, "user")
+	// Upgrade the connection to a websocket connection
+	conn, err := websocket.Accept(w, r, nil)
+	if err != nil {
+		return
+	}
+
+	// Lock the resource and store the connection
+    connMutex.Lock()
+    connections[user] = &Connection{ws: conn, user: user}
+    connMutex.Unlock()
+
+    // Keep the connection alive
+    for {
+        _, _, err := conn.Read(context.Background())
+        if err != nil {
+			// If there is an error, break the loop which will make the func implicitly return, running the defer function
+            break
+        }
+    }
+
+	// Defer the removal of the connection when the function returns
+    defer func() {
+        connMutex.Lock()
+        delete(connections, user)
+        connMutex.Unlock()
+        conn.Close(websocket.StatusNormalClosure, "Connection closed")
+    }()
+
 }
 
 func HandleSendMessage(w http.ResponseWriter, r *http.Request){
@@ -263,5 +309,30 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	// only pulls out the "oob-message" block from the message.html template, and passes it messageData
 	messageTemplate.ExecuteTemplate(w, "oob-message", messageData)
 	formTemplate.Execute(w, formData)
-	
-} 
+
+	// fire off the func that broadcasts the message to the recipient 
+	broadcastMessage(User.Username, recepientUser.Username, message)
+
+}
+
+func broadcastMessage(sender, recipient, message string) {
+    connMutex.Lock()
+
+	// unlock connection when broadcast fun is done
+    defer connMutex.Unlock()
+
+    messageData := map[string]interface{}{
+        "sender":  sender,
+		"recepient": recipient,
+        "message":   message,
+        "timestamp": time.Now(),
+    }
+
+	// convert to JSON
+    jsonMessage, _ := json.Marshal(messageData)
+
+    // Send message
+    if conn, ok := connections[sender]; ok {
+        conn.ws.Write(context.Background(), websocket.MessageText, jsonMessage)
+    }
+}
