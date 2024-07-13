@@ -121,32 +121,37 @@ func IsUniqueUsername(username string) bool {
 
 }
 
-func CreateUser(user database.UserCredentials) http.Cookie {
+func CreateUser(user database.UserCredentials) (http.Cookie, error) {
 	fmt.Println("Creating User")
 
 	hashedPassword := GeneratHashedPassword(user.Password)
+	websocketKey, err := database.GenerateWebSocketKey()
 
-	statement, err := database.DB.Prepare("INSERT INTO user (id, username, password) VALUES (?, ?, ?)")
 	if err != nil {
-		log.Fatal(err)
+		return http.Cookie{}, err
+	}
+
+	statement, err := database.DB.Prepare("INSERT INTO user (id, username, password, websocket_key) VALUES (?, ?, ?, ?)")
+	if err != nil {
+		return http.Cookie{}, err
 	}
 
 	defer statement.Close()
 	uid, err := uuid.NewRandom()
 	if err != nil {
-		log.Fatal(err)
+		return http.Cookie{}, err
 	}
 
 	rowId := uid.String()
-	_, err = statement.Exec(rowId, user.Username, hashedPassword)
+	_, err = statement.Exec(rowId, user.Username, hashedPassword, websocketKey)
 	if err != nil {
-		log.Fatal(err)
+		return http.Cookie{}, err
 	}
 	fmt.Printf("Successfully added %s", user.Username)
 
 	var cookie http.Cookie = CreateSession(user.Username)
 
-	return cookie
+	return cookie, nil
 }
 
 func CreateSession(username string) http.Cookie {

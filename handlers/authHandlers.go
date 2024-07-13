@@ -130,7 +130,18 @@ func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 				Username: username,
 				Password: r.FormValue("password1"),
 			}
-			var cookie http.Cookie = auth.CreateUser(user)
+			cookie, err := auth.CreateUser(user)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				FormData := FormData{
+					Values: map[string]string{
+						"PreviousUsername": username,
+					},
+					Error: "Something went wrong on the server. Please try again later.",
+				}
+				template := template.Must(template.ParseFiles("views/register.html"))
+				template.ExecuteTemplate(w, "register-form", FormData)
+			}
 			http.SetCookie(w, &cookie)
 			http.Redirect(w, r, "/", http.StatusMovedPermanently)
 		} else {

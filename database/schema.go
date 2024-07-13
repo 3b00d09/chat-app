@@ -8,7 +8,8 @@ func RunSchema(db *sql.DB) {
 	CREATE TABLE IF NOT EXISTS user (
 		id TEXT NOT NULL PRIMARY KEY,
 		username TEXT NOT NULL,
-		password TEXT NOT NULL
+		password TEXT NOT NULL,
+		websocket_key TEXT NOT NULL
 	);
 	
 	CREATE TABLE IF NOT EXISTS user_session (
