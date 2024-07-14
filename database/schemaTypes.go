@@ -1,8 +1,9 @@
 package database
 
 type User struct {
-	ID       string `db:"id"`
-	Username string `db:"username"`
+	ID           string `db:"id"`
+	Username     string `db:"username"`
+	WebsocketKey string `db:"websocket_key"`
 }
 
 type UserCredentials struct {

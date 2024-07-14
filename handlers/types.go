@@ -7,6 +7,7 @@ import (
 type Message struct {
 	Content string
 	Sender  string
+	Recipient string
 	Date   string
 	// helps with styling the message in the chat
 	RecipientMessage bool
@@ -24,6 +25,14 @@ type PageData struct {
 	Messages []Message
 	TargetUser string
 	FormData FormData
+	WebsocketKeys map[string]string
+}
+
+
+type UsersWithWebsocketKeys struct {
+	Username1 string
+	Username2 string
+	WebsocketKey string
 }
 
 type FormData struct{

@@ -36,7 +36,7 @@ func AuthenticateSession(cookie string) database.User {
 		return database.User{}
 	 }
 
-	 statement, err = database.DB.Prepare("SELECT id, username FROM user WHERE id = ?")
+	 statement, err = database.DB.Prepare("SELECT id, username, websocket_key FROM user WHERE id = ?")
 
 	 if err != nil {	
 		 log.Fatal(err)
@@ -45,7 +45,7 @@ func AuthenticateSession(cookie string) database.User {
 
 	 row = statement.QueryRow(userID)
 	 User := database.User{}
-	 err = row.Scan(&User.ID, &User.Username)
+	 err = row.Scan(&User.ID, &User.Username, &User.WebsocketKey)
 
 	 if err != nil {
 		 return database.User{}

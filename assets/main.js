@@ -16,6 +16,3 @@ document.querySelector("#search-modal").addEventListener("click", (e) => {
   }
 }); 
 
-window.addEventListener("popstate ", (e) => {
-  console.log("popstate  event fired")
-});

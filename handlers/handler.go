@@ -20,15 +20,17 @@ import (
 
 type Connection struct {
     ws   *websocket.Conn
-    user string
+	websocketKey string
 }
 
 var (
-    connections = make(map[string]*Connection)
+	// using a slice of connections because the key by itself isnt enough to identify a connection causing an error where only the first connected user is stored
+    connections = make(map[string][]*Connection)
+	websocketsMap = make(map[string]string)
 	// a mutex is mutual exclusion lock. It is used to synchronize access to shared resources so we dont get race conditions and locks a resource while its being used.
     connMutex   sync.Mutex
 )
-var messages []Message = []Message{}
+
 
 func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 
@@ -48,7 +50,6 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 		PageData: PageData{
 			User: User,
 			Users: results,
-			Messages: messages,
 			TargetUser: "",
 		},
 		Username: User.Username,
@@ -114,12 +115,12 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	var User database.User  = auth.AuthenticateRequest(w, r)
 
 	if(User.ID == ""){
-		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 		return
 	}
 
 	results := database.FetchSidebarUsers(User.Username)
-	statement, err := database.DB.Prepare("SELECT id, username FROM user WHERE username = ?")
+	statement, err := database.DB.Prepare("SELECT id, username, websocket_key FROM user WHERE username = ?")
 
 	if err != nil {
 		log.Fatal(err)
@@ -129,27 +130,46 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	rows := statement.QueryRow(targetUser)
 
 	var recepientUser database.User
-	err = rows.Scan(&recepientUser.ID, &recepientUser.Username)
+	err = rows.Scan(&recepientUser.ID, &recepientUser.Username, &recepientUser.WebsocketKey)
 
 	if err != nil {
 		recepientUser.Username = ""
 	}
 
-	statement, err = database.DB.Prepare("SELECT user.username, messages.message, messages.created_at FROM messages LEFT JOIN user ON messages.user_id = user.id WHERE user.id IN (?, ?) ORDER BY messages.created_at ASC")
+	// makes it much easier to parse it in js 
+	websocketMapKey := fmt.Sprintf("%s,%s", User.Username, recepientUser.Username)
+
+	// check if these two users already have a websocket connection
+	exists := websocketsMap[websocketMapKey];
+	if exists == "" {
+		statement, err = database.DB.Prepare("SELECT websocket_key FROM user WHERE username = ?")
+		if err != nil {
+			log.Fatal(err)
+		}
+		var userWebsocketKey string
+		rows = statement.QueryRow(User.Username)
+		rows.Scan(&userWebsocketKey)
+
+		websocketKey := database.GenerateCommonWebsocketKey(userWebsocketKey, recepientUser.WebsocketKey)
+		websocketsMap[websocketMapKey] = websocketKey
+	}
+
+	statement, err = database.DB.Prepare("SELECT sender_user.username AS sender_username, recipient_user.username AS recipient_username, messages.message, messages.created_at FROM messages LEFT JOIN user AS sender_user ON messages.sender = sender_user.id LEFT JOIN user AS recipient_user ON messages.recipient = recipient_user.id WHERE (messages.sender = ? AND messages.recipient = ?) OR (messages.sender = ? AND messages.recipient = ?) ORDER BY messages.created_at ASC;")
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	rows2, err := statement.Query(User.ID, recepientUser.ID)
+	rows2, err := statement.Query(User.ID, recepientUser.ID, recepientUser.ID, User.ID)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	var messages []Message = []Message{}
 	for rows2.Next(){
 		var message Message
-		err := rows2.Scan(&message.Sender, &message.Content, &message.Date)
+		err := rows2.Scan(&message.Sender, &message.Recipient, &message.Content, &message.Date)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -168,6 +188,7 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 			Users: results,
 			Messages: messages,
 			TargetUser: recepientUser.Username,
+			WebsocketKeys: websocketsMap,
 		},
 		FormData: FormData{
 				Values: map[string]string{},
@@ -187,7 +208,8 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	user := chi.URLParam(r, "user")
+	key := chi.URLParam(r, "key")
+
 	// Upgrade the connection to a websocket connection
 	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
@@ -196,7 +218,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// Lock the resource and store the connection
     connMutex.Lock()
-    connections[user] = &Connection{ws: conn, user: user}
+	connections[key] = append(connections[key], &Connection{ws: conn, websocketKey: key})
     connMutex.Unlock()
 
     // Keep the connection alive
@@ -211,7 +233,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Defer the removal of the connection when the function returns
     defer func() {
         connMutex.Lock()
-        delete(connections, user)
+        delete(connections, key)
         connMutex.Unlock()
         conn.Close(websocket.StatusNormalClosure, "Connection closed")
     }()
@@ -253,7 +275,7 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	statement, err := database.DB.Prepare("SELECT id, username FROM user WHERE username = ?")
+	statement, err := database.DB.Prepare("SELECT id, username, websocket_key FROM user WHERE username = ?")
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		formData.Error = "Something went wrong. Please try again later"
@@ -266,7 +288,7 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	rows := statement.QueryRow(targetUser)
 
 	var recepientUser database.User
-	err = rows.Scan(&recepientUser.ID, &recepientUser.Username)
+	err = rows.Scan(&recepientUser.ID, &recepientUser.Username, &recepientUser.WebsocketKey)
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -275,7 +297,7 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	statement, err = database.DB.Prepare("INSERT INTO messages (id, user_id, message, created_at) VALUES (?, ?, ?, ?)")
+	statement, err = database.DB.Prepare("INSERT INTO messages (id, sender, recipient, message, created_at) VALUES (?, ?, ?, ?, ?)")
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -288,7 +310,7 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	newRowId := uuid.New().String()
 	newRowId = newRowId[:8]
 	timestamp := time.Now().Unix()
-	_, err = statement.Exec(newRowId, User.ID, message, timestamp)
+	_, err = statement.Exec(newRowId, User.ID, recepientUser.ID, message, timestamp)
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -311,11 +333,12 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	formTemplate.Execute(w, formData)
 
 	// fire off the func that broadcasts the message to the recipient 
-	broadcastMessage(User.Username, recepientUser.Username, message)
+	websocketKey := database.GenerateCommonWebsocketKey(User.WebsocketKey, recepientUser.WebsocketKey)
+	broadcastMessage(User.Username, recepientUser.Username, message, websocketKey)
 
 }
 
-func broadcastMessage(sender, recipient, message string) {
+func broadcastMessage(sender, recepient, message, websocketKey string) {
     connMutex.Lock()
 
 	// unlock connection when broadcast fun is done
@@ -323,7 +346,7 @@ func broadcastMessage(sender, recipient, message string) {
 
     messageData := map[string]interface{}{
         "sender":  sender,
-		"recepient": recipient,
+		"recepient": recepient,
         "message":   message,
         "timestamp": time.Now(),
     }
@@ -332,7 +355,7 @@ func broadcastMessage(sender, recipient, message string) {
     jsonMessage, _ := json.Marshal(messageData)
 
     // Send message
-    if conn, ok := connections[sender]; ok {
+	for _, conn := range connections[websocketKey] {
         conn.ws.Write(context.Background(), websocket.MessageText, jsonMessage)
     }
 }

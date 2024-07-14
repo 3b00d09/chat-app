@@ -122,6 +122,7 @@ func HandleLoginSubmission(w http.ResponseWriter, r *http.Request) {
 func HandleRegisterSubmission(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
+	//TODO prevent non alphanumeric characters in username
 	username := r.FormValue("username")
 	isUnique := auth.IsUniqueUsername(username)
 	if isUnique {

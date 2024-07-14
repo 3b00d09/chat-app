@@ -21,7 +21,8 @@ func RunSchema(db *sql.DB) {
 
 	CREATE TABLE IF NOT EXISTS messages(
 		id TEXT NOT NULL PRIMARY KEY,
-		user_id TEXT NOT NULL REFERENCES user(id),
+		sender TEXT NOT NULL REFERENCES user(id),
+		recipient TEXT NOT NULL REFERENCES user(id),
 		message TEXT NOT NULL,
 		created_at INTEGER NOT NULL
 	);

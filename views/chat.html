@@ -17,16 +17,38 @@
     </div>
 
     <script>
-        if(window.location.href.indexOf("chat") > -1) {
-            const chattingWith = '{{.PageData.TargetUser}}';
-            const user = '{{.PageData.User.Username}}'
-            const url = `ws://${window.location.host}/ws/${chattingWith}`;
+        // parse the raw string passed by the server into a map
+        const parseMap = (str) => {
+            const map = new Map();
+            // our format is user1,user2:websocket key, and then we have a space between each pair of users and their key
+
+            // removes 'map[' and the ']' at the end then splits by space to get the pairs
+            const pairs = str.slice(4, str.length - 1).split(" ");
+
+            pairs.map((pair)=>{
+                // temp array makes it easy to extract the data
+                const tempArr = pair.split(",")
+                // user 1 is easily parsed
+                const user1 = tempArr[0]
+                // user 2 and key require further splitting as they are separated by a colon
+                const user2 = tempArr[1].split(":")[0]
+                const websocketkey = tempArr[1].split(":")[1]
+                // sort the users so that the key is always the same
+                const mapKey = Array.from([user1, user2]).sort().join(",");
+                map.set(mapKey, websocketkey);
+            })
+
+            return map;
+        };
+
+        const createWebSocket = (url, chattingWith) =>{
             const ws = new WebSocket(url);
             ws.onopen = () => console.log("WebSocket connection established");
             ws.onclose = () => console.log("WebSocket connection closed");
             ws.onerror = (error) => console.log("WebSocket error:", error);
             ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            if (data.sender === chattingWith) {
                 const messages = document.getElementById("messages");
                 const message = document.createElement("div");
                 message.innerHTML = `            
@@ -36,8 +58,25 @@
                     </div> 
                 `;
                 messages.appendChild(message);
-            };
+                };
+            }
+        }
+
+        if(window.location.href.indexOf("chat") > -1) {
+            const WebsocketKeys = parseMap('{{.PageData.WebsocketKeys}}');
+
+            const chattingWith = '{{.PageData.TargetUser}}';
+            const user = '{{.PageData.User.Username}}'
+
+            // sort the users so that the key is always the same 
+            const mapKey = Array.from([user, chattingWith]).sort().join(",");
+            // get the websocket key
+            WebsocketKeys.forEach((key)=>{
+                const url = `ws://${window.location.host}/ws/${key}`;
+                createWebSocket(url, chattingWith);
+            })
         };
+
     </script>
 {{end}}
 
