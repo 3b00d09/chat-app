@@ -10,7 +10,7 @@
     <title>{{template "title" .}}</title>
 </head>
 
-<body class="text-white bg-background flex flex-col">
+<body class="text-foreground bg-background flex flex-col">
     <header class="grid bg-zinc-800 p-4 w-full grid-cols-2 items-center h-[7vh]">
         {{if .Username}}
             <p class="justify-self-start">Welcome {{ .Username }}</p>
@@ -23,7 +23,7 @@
         {{end}}
     </header>
 
-    <main class="flex flex-col gap-2 justify-center items-center h-[93vh] overflow-hidden">
+    <main class="flex flex-col gap-2 justify-center items-center h-[93vh] overflow-hidden py-16 px-44">
         {{template "content" .}}
     </main>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
 </body>

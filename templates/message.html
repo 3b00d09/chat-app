@@ -1,14 +1,11 @@
 {{block "message" .}}
     {{if .RecipientMessage}}
-        <div class="flex gap-4 items-center">
-            <p>{{.Sender}}</p>
-            <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
-        </div> 
+        <div class="flex">
+            <p class="bg-[#202025] w-max max-w-[60%] rounded-full px-4 py-2">{{.Content}}</p>
+        </div>
     {{else}}
-        <div class="flex gap-4 items-center justify-end">
-            <p class="bg-primary
-            p-2 rounded w-1/2">{{.Content}}</p>
-            <p>{{.Sender}}</p>
+        <div class="flex">
+            <p class="bg-primary text-primary-foreground w-max max-w-[60%] rounded-full px-4 py-2 ml-auto">{{.Content}}</p>
         </div>
     {{end}}
 {{end}}
@@ -16,15 +13,12 @@
 {{block "oob-message" .}}
     <div id="messages" hx-swap-oob="beforeend">
         {{if .RecipientMessage}}
-            <div class="flex gap-4 items-center">
-                <p>{{.Sender}}</p>
-                <p class="bg-accent p-2 rounded w-1/2">{{.Content}}</p>
-            </div> 
+            <div class="flex">
+                <p class="bg-[#202025] w-max max-w-[60%] rounded-full px-4 py-2">{{.Content}}</p>
+            </div>
         {{else}}
-            <div class="flex gap-4 items-center justify-end">
-                <p class="bg-primary
-                p-2 rounded w-1/2">{{.Content}}</p>
-                <p>{{.Sender}}</p>
+            <div class="flex">
+                <p class="bg-primary text-primary-foreground w-max max-w-[60%] rounded-full px-4 py-2 ml-auto">{{.Content}}</p>
             </div>
         {{end}}
     </div>

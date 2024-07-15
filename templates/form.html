@@ -2,9 +2,11 @@
     <form id="message-form" 
     hx-post="/send-message"
     hx-swap="outerHTML" 
-    class="flex flex-wrap gap-4 w-full justify-center items-center">
-        <input class="w-3/4 p-2 text-black" name="chat-message">
-        <button type="submit" class="w-fit bg-accent text-white p-2 rounded-lg">Send</button>
+    class="flex w-full items-center space-x-2 p-2 justify-center">
+        <input class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground flex-1"
+            placeholder="Type your message here..." 
+            name="chat-message">
+        <button type="submit" class="w-fit bg-primary text-primary-foreground p-2 rounded-lg">Send</button>
         <input type="hidden" name="target-user" value={{.TargetUser}}>
     
         {{if .Error}}

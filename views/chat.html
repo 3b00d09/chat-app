@@ -1,16 +1,19 @@
 {{define "chat" }}
-    <div class="flex-1 flex flex-col">
+    <div class="flex flex-col overflow-hidden">
         {{if gt (len .PageData.TargetUser)  0}}
-            <div class="border-b py-8 px-4 flex items-center h-fit">
+            <div class="border-b border-border p-2 flex items-center gap-2 flex-shrink-0">
+                <img src="/assets/images/user.jpg" class="w-12 h-12 rounded-full bg aspect-square bg-primary" />
                 Chatting with {{.PageData.TargetUser}}
             </div>
 
-            <div class="bg-black p-6 grid gap-6 self-end w-full">
+            <div class="bg-background p-6 flex flex-col gap-6 flex-1 overflow-y-auto">
                 <div id="messages" class="grid gap-6 w-full">
                     {{range .PageData.Messages}}
                         {{template "message" .}}
                     {{end}}
                 </div>
+            </div>
+            <div class="border-t border-border">
                 {{template "form" .FormData}}
             </div>
         {{end}}
