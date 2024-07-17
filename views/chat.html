@@ -6,7 +6,7 @@
                 Chatting with {{.PageData.TargetUser}}
             </div>
 
-            <div class="bg-background p-6 flex flex-col gap-6 flex-1 overflow-y-auto">
+            <div id="messages_container" class="bg-background p-6 flex flex-col gap-6 flex-1 overflow-y-auto">
                 <div id="messages" class="grid gap-6 w-full">
                     {{range .PageData.Messages}}
                         {{template "message" .}}
@@ -50,24 +50,27 @@
             ws.onclose = () => console.log("WebSocket connection closed");
             ws.onerror = (error) => console.log("WebSocket error:", error);
             ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.sender === chattingWith) {
-                const messages = document.getElementById("messages");
-                const message = document.createElement("div");
-                message.innerHTML = `            
-                    <div class="flex gap-4 items-center">
-                    <p>${data.sender}</p>
-                    <p class="bg-accent p-2 rounded w-1/2">${data.message}</p>
-                    </div> 
-                `;
-                messages.appendChild(message);
+                const data = JSON.parse(event.data);
+                if (data.sender === chattingWith) {
+                    const messages = document.getElementById("messages");
+                    const div = document.createElement("div");
+                    div.innerHTML = `
+                        <div class="flex">
+                            <p class="bg-[#202025] w-max max-w-[60%] rounded-full px-4 py-2">${data.message}</p>
+                        </div>
+                    `;
+                    messages.appendChild(div);
                 };
+                // scroll to end after adding a new message
+                document.querySelector("#messages_container").scrollTo(0, document.querySelector("#messages_container").scrollHeight);
             }
         }
 
         if(window.location.href.indexOf("chat") > -1) {
+            // scroll to end after loading into chat
+            document.querySelector("#messages_container").scrollTo(0, document.querySelector("#messages_container").scrollHeight);
+            
             const WebsocketKeys = parseMap('{{.PageData.WebsocketKeys}}');
-
             const chattingWith = '{{.PageData.TargetUser}}';
             const user = '{{.PageData.User.Username}}'
 

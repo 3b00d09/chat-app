@@ -160,7 +160,7 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		websocketsMap[websocketMapKey] = websocketKey
 	}
 
-	statement, err = database.DB.Prepare("SELECT user.username, messages.message, messages.created_at FROM messages LEFT JOIN user ON messages.message_author = user.id LEFT JOIN conversations ON conversations.user1 = user.id OR conversations.user2 = user.id WHERE conversations.id = ? ORDER BY messages.created_at DESC")
+	statement, err = database.DB.Prepare("SELECT user.username, messages.message, messages.created_at FROM messages LEFT JOIN user ON messages.message_author = user.id LEFT JOIN conversations ON conversations.user1 = user.id OR conversations.user2 = user.id WHERE conversations.id = ? ORDER BY messages.created_at ASC")
 
 
 	if err != nil {
@@ -301,7 +301,9 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	statement, err = database.DB.Prepare("INSERT INTO messages (id, sender, recipient, message, created_at) VALUES (?, ?, ?, ?, ?)")
+	conversationId := database.FetchConversationId(User.ID, recepientUser.ID)
+
+	statement, err = database.DB.Prepare("INSERT INTO messages (id, conversation_id, message_author, message, created_at) VALUES (?, ?, ?, ?, ?)")
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -314,9 +316,10 @@ func HandleSendMessage(w http.ResponseWriter, r *http.Request){
 	newRowId := uuid.New().String()
 	newRowId = newRowId[:8]
 	timestamp := time.Now().Unix()
-	_, err = statement.Exec(newRowId, User.ID, recepientUser.ID, message, timestamp)
+	_, err = statement.Exec(newRowId, conversationId, User.ID, message, timestamp)
 
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		formData.Error = "Something went wrong. Please try again later."
 		formTemplate.Execute(w, formData)
