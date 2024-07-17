@@ -19,10 +19,15 @@ func RunSchema(db *sql.DB) {
 		idle_expires INTEGER NOT NULL
 	);
 
+	CREATE TABLE IF NOT EXISTS conversations(
+		id TEXT NOT NULL PRIMARY KEY,
+		user1 TEXT NOT NULL REFERENCES user(id),
+		user2 TEXT NOT NULL REFERENCES user(id)
+	);
+
 	CREATE TABLE IF NOT EXISTS messages(
 		id TEXT NOT NULL PRIMARY KEY,
-		sender TEXT NOT NULL REFERENCES user(id),
-		recipient TEXT NOT NULL REFERENCES user(id),
+		conversation_id TEXT NOT NULL REFERENCES conversations(id),
 		message TEXT NOT NULL,
 		created_at INTEGER NOT NULL
 	);
