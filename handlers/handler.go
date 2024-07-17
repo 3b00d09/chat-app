@@ -23,6 +23,8 @@ type Connection struct {
 	websocketKey string
 }
 
+type SidebarUser = database.SidebarUser
+
 var (
 	// using a slice of connections because the key by itself isnt enough to identify a connection causing an error where only the first connected user is stored
     connections = make(map[string][]*Connection)
@@ -41,7 +43,7 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results := database.FetchSidebarUsers(User.Username)
+	SidebarUsers := database.FetchSidebarUsers(User.ID)
 
 	// still have to pass in chat.html because it will error out even if i have an if statement wrapping it in the template
 	templates := template.Must(template.ParseFiles("views/layout.html", "views/index.html", "views/chat.html", "templates/form.html", "templates/message.html"))
@@ -49,7 +51,7 @@ func HandleIndexRoute(w http.ResponseWriter, r *http.Request) {
 	data := LayoutData{
 		PageData: PageData{
 			User: User,
-			Users: results,
+			SidebarUsers: SidebarUsers,
 			TargetUser: "",
 		},
 		Username: User.Username,
@@ -119,7 +121,6 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results := database.FetchSidebarUsers(User.Username)
 	statement, err := database.DB.Prepare("SELECT id, username, websocket_key FROM user WHERE username = ?")
 
 	if err != nil {
@@ -135,6 +136,11 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		recepientUser.Username = ""
 	}
+
+	// fetch conversation id automatically creates a new row for us if a conversation doesnt exist
+	conversationId := database.FetchConversationId(User.ID, recepientUser.ID)
+
+	SidebarUsers := database.FetchSidebarUsers(User.ID)
 
 	// makes it much easier to parse it in js 
 	websocketMapKey := fmt.Sprintf("%s,%s", User.Username, recepientUser.Username)
@@ -154,13 +160,14 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		websocketsMap[websocketMapKey] = websocketKey
 	}
 
-	statement, err = database.DB.Prepare("SELECT sender_user.username AS sender_username, recipient_user.username AS recipient_username, messages.message, messages.created_at FROM messages LEFT JOIN user AS sender_user ON messages.sender = sender_user.id LEFT JOIN user AS recipient_user ON messages.recipient = recipient_user.id WHERE (messages.sender = ? AND messages.recipient = ?) OR (messages.sender = ? AND messages.recipient = ?) ORDER BY messages.created_at ASC;")
+	statement, err = database.DB.Prepare("SELECT user.username, messages.message, messages.created_at FROM messages LEFT JOIN user ON messages.message_author = user.id LEFT JOIN conversations ON conversations.user1 = user.id OR conversations.user2 = user.id WHERE conversations.id = ? ORDER BY messages.created_at DESC")
+
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	rows2, err := statement.Query(User.ID, recepientUser.ID, recepientUser.ID, User.ID)
+	rows2, err := statement.Query(conversationId)
 
 	if err != nil {
 		log.Fatal(err)
@@ -169,15 +176,12 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	var messages []Message = []Message{}
 	for rows2.Next(){
 		var message Message
-		err := rows2.Scan(&message.Sender, &message.Recipient, &message.Content, &message.Date)
+		err := rows2.Scan(&message.Sender, &message.Content, &message.Date)
 		if err != nil {
 			fmt.Println(err)
 		}
-		if message.Sender == User.Username {
-			message.RecipientMessage = false
-		}else{
-			message.RecipientMessage = true
-		}
+		message.RecipientMessage = message.Sender != User.Username
+
 		messages = append(messages, message)
 	}
 
@@ -185,7 +189,7 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	LayoutData := LayoutData{
 		PageData: PageData{
 			User: User,
-			Users: results,
+			SidebarUsers: SidebarUsers,
 			Messages: messages,
 			TargetUser: recepientUser.Username,
 			WebsocketKeys: websocketsMap,

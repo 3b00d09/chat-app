@@ -16,15 +16,8 @@
                 </button>
             </div>
             <ul class="list-none flex-1 overflow-y-auto">
-                {{range .PageData.Users}}
-                    <a href="/chat/{{.}}" class="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50">
-                        <img src ="/assets/images/user.jpg" class="w-12 h-12 rounded-full bg aspect-square bg-primary" />
-                        <div class="grid gap-1">
-                            <p class="font-medium leading-none">{{.}}</p>
-                            <p class="text-sm text-muted-foreground">Hey, what's going on?</p>
-                            <p class="text-sm text-muted-foreground">2m</p>
-                        </div>
-                    </a>
+                {{range .PageData.SidebarUsers}}
+                    {{template "sidebar-user" .}}
                 {{end}}
             </ul>
         </div>
@@ -44,4 +37,15 @@
             </div>
         </div>
     </dialog> 
+{{end}}
+
+{{block "sidebar-user" .}}
+    <a href="/chat/{{.Username}}" class="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50">
+        <img src ="/assets/images/user.jpg" class="w-12 h-12 rounded-full bg aspect-square bg-primary" />
+        <div class="grid gap-1">
+            <p class="font-medium leading-none">{{.Username}}</p>
+            <p class="text-sm text-muted-foreground">{{.Message}}</p>
+            <p class="text-sm text-muted-foreground">{{.Created_at}}</p>
+        </div>
+    </a>
 {{end}}

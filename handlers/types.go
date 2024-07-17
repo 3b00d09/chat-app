@@ -21,7 +21,7 @@ type LayoutData struct{
 
 type PageData struct {
 	User database.User
-	Users []string
+	SidebarUsers []database.SidebarUser
 	Messages []Message
 	TargetUser string
 	FormData FormData
