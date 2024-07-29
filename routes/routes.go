@@ -12,6 +12,9 @@ func SetupRoutes() *chi.Mux {
 	
 	r := chi.NewRouter()
 
+	// disable caching for all routes as it causes a lot of bugginess in login, logout, and chat routes
+	r.Use(disableCache)
+
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if filepath.Ext(r.URL.Path) == ".css" {
@@ -39,4 +42,13 @@ func SetupRoutes() *chi.Mux {
 	r.Handle("/assets/*", http.StripPrefix("/assets/", fs))
 
 	return r
+}
+
+func disableCache(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+		next.ServeHTTP(w, r)
+	})
 }

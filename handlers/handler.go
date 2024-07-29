@@ -70,18 +70,24 @@ func HandleSearchRoute(w http.ResponseWriter, r *http.Request) {
 
 	queryParam := r.URL.Query().Get("q")
 	queryParam = strings.Trim(queryParam, " ")
+	user := auth.AuthenticateRequest(w, r)
+	if user.ID == "" {
+		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+		return
+	}
+
 	if(queryParam == ""){
 		return
 	}
 
-	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username LIKE ?")
+	statement, err := database.DB.Prepare("SELECT username FROM user WHERE username LIKE ? AND username != ?")
 
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer statement.Close()
 
-	rows, err := statement.Query("%" + queryParam + "%")
+	rows, err := statement.Query("%" + queryParam + "%", user.Username)
 	if err != nil {
         log.Fatal(err)
     }
@@ -103,7 +109,7 @@ func HandleSearchRoute(w http.ResponseWriter, r *http.Request) {
 		html = "<div>No Results Found</div>"
 	}else{
 		for _, username := range results {
-			html += fmt.Sprintf("<div>%s</div>", username)
+			html += fmt.Sprintf("<a class='search-result-link' href=/chat/%s><img src='/assets/images/user.jpg'/>%s</a>", username, username)
 		}
 	}
 

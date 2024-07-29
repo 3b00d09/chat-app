@@ -36,3 +36,24 @@
 ::-webkit-scrollbar{
     display: none;
 }
+
+/* returned by server so our tailwind compiler wont catch it, have to manually style here */
+.search-result-link{
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.search-result-link:hover{
+    background-color: hsl(var(--secondary));
+    cursor: pointer;
+}
+
+.search-result-link img{
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    aspect-ratio: 1/1;
+}

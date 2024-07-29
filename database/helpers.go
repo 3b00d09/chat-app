@@ -50,6 +50,7 @@ func init() {
 
 func FetchSidebarUsers(excludedUser string) []SidebarUser {
 	// thanks claude for saving me from this query
+	// if a convo is created without sending messages, this query ignores that convo so sidebar doesn't contain empty convos
 	statement, err := DB.Prepare(`
 		SELECT
 		u1.id AS user1_id,
