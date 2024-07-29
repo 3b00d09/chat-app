@@ -70,17 +70,12 @@
             // scroll to end after loading into chat
             document.querySelector("#messages_container").scrollTo(0, document.querySelector("#messages_container").scrollHeight);
             
-            const WebsocketKeys = parseMap('{{.PageData.WebsocketKeys}}');
+            const WebsocketKey = ('{{.PageData.WebsocketKey}}');
             const chattingWith = '{{.PageData.TargetUser}}';
-            const user = '{{.PageData.User.Username}}'
 
-            // sort the users so that the key is always the same 
-            const mapKey = Array.from([user, chattingWith]).sort().join(",");
-            // get the websocket key
-            WebsocketKeys.forEach((key)=>{
-                const url = `ws://${window.location.host}/ws/${key}`;
-                createWebSocket(url, chattingWith);
-            })
+            const url = `ws://${window.location.host}/ws/${WebsocketKey}`;
+            createWebSocket(url, chattingWith);
+            
         };
 
     </script>

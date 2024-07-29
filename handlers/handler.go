@@ -152,8 +152,8 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 	websocketMapKey := fmt.Sprintf("%s,%s", User.Username, recepientUser.Username)
 
 	// check if these two users already have a websocket connection
-	exists := websocketsMap[websocketMapKey];
-	if exists == "" {
+	websocketKey := websocketsMap[websocketMapKey];
+	if websocketKey == "" {
 		statement, err = database.DB.Prepare("SELECT websocket_key FROM user WHERE username = ?")
 		if err != nil {
 			log.Fatal(err)
@@ -162,8 +162,7 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 		rows = statement.QueryRow(User.Username)
 		rows.Scan(&userWebsocketKey)
 
-		websocketKey := database.GenerateCommonWebsocketKey(userWebsocketKey, recepientUser.WebsocketKey)
-		websocketsMap[websocketMapKey] = websocketKey
+		websocketKey = database.GenerateCommonWebsocketKey(userWebsocketKey, recepientUser.WebsocketKey)
 	}
 
 	statement, err = database.DB.Prepare("SELECT user.username, messages.message, messages.created_at FROM messages LEFT JOIN user ON messages.message_author = user.id LEFT JOIN conversations ON conversations.user1 = user.id OR conversations.user2 = user.id WHERE conversations.id = ? ORDER BY messages.created_at ASC")
@@ -198,13 +197,15 @@ func HandleChatRoute(w http.ResponseWriter, r *http.Request) {
 			SidebarUsers: SidebarUsers,
 			Messages: messages,
 			TargetUser: recepientUser.Username,
-			WebsocketKeys: websocketsMap,
+			WebsocketKey: websocketKey,
 		},
 		FormData: FormData{
 				Values: map[string]string{},
 				TargetUser: recepientUser.Username,
 			},
 		Username: User.Username,
+		WebsocketKeys: websocketsMap,
+
 	}
 
 	err = templates.ExecuteTemplate(w, "layout.html", LayoutData)

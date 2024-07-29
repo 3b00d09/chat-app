@@ -17,6 +17,7 @@ type LayoutData struct{
 	FormData FormData
 	PageData PageData
 	Username string
+	WebsocketKeys map[string]string
 }
 
 type PageData struct {
@@ -25,7 +26,7 @@ type PageData struct {
 	Messages []Message
 	TargetUser string
 	FormData FormData
-	WebsocketKeys map[string]string
+	WebsocketKey string
 }
 
 
